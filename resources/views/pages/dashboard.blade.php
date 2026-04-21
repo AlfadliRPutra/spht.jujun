@@ -1,15 +1,28 @@
-@php($title = 'Dashboard')
-@php($active = 'dashboard')
+@php
+    use App\Enums\OrderStatus;
+    use App\Enums\UserRole;
+    use App\Models\Category;
+    use App\Models\OrderItem;
+    use App\Models\Product;
+    use App\Models\User;
+
+    $title  = 'Dashboard';
+    $active = 'dashboard';
+    $user   = auth()->user();
+@endphp
 
 <x-layouts.app :title="$title" :active="$active">
-    <div class="row row-cards">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <h3 class="card-title">Selamat datang</h3>
-                    <p class="text-secondary">Ini adalah halaman dashboard menggunakan template Tabler.</p>
-                </div>
-            </div>
-        </div>
-    </div>
+    @switch($user->role)
+        @case(UserRole::Pelanggan)
+            @include('pages.partials.dashboard-pelanggan', ['user' => $user])
+            @break
+
+        @case(UserRole::Petani)
+            @include('pages.partials.dashboard-petani', ['user' => $user])
+            @break
+
+        @case(UserRole::Admin)
+            @include('pages.partials.dashboard-admin', ['user' => $user])
+            @break
+    @endswitch
 </x-layouts.app>

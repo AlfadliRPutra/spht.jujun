@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(composer require *)"
+      "Bash(composer require *)",
+      "Bash(php artisan *)",
+      "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $app = require '\\\\''bootstrap/app.php'\\\\''; $app->make\\('\\\\''Illuminate\\\\Contracts\\\\Console\\\\Kernel'\\\\''\\)->bootstrap\\(\\); $compiled = app\\('\\\\''blade.compiler'\\\\''\\)->compileString\\(file_get_contents\\('\\\\''resources/views/pages/admin/verifikasi/index.blade.php'\\\\''\\)\\); echo $compiled;')",
+      "Bash(php -r ' *)"
     ]
   }
 }

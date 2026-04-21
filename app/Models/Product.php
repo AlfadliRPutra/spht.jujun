@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +28,19 @@ class Product extends Model
             'harga' => 'decimal:2',
             'stok'  => 'integer',
         ];
+    }
+
+    protected function imageUrl(): Attribute
+    {
+        return Attribute::get(function () {
+            if (! $this->gambar) {
+                return 'https://picsum.photos/seed/spht-'.$this->id.'/600/450';
+            }
+            if (str_starts_with($this->gambar, 'http')) {
+                return $this->gambar;
+            }
+            return asset('storage/'.$this->gambar);
+        });
     }
 
     public function petani(): BelongsTo
