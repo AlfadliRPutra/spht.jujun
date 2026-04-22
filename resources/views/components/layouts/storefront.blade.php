@@ -34,7 +34,6 @@
         .app-container { width: 100%; max-width: 1400px; margin-inline: auto; padding-inline: 8px; }
         @media (min-width: 1200px) { .app-container { padding-inline: 16px; } }
 
-        .storefront-topbar { background: var(--spht-green-dark); color: #fff; font-size: .82rem; }
         .storefront-nav { background: #fff; border-bottom: 1px solid var(--spht-border); }
         .storefront-nav .nav-link { color: var(--spht-ink); font-weight: 500; }
         .storefront-nav .nav-link.active { color: var(--spht-green); }

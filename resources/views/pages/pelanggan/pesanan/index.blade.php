@@ -5,7 +5,32 @@
 @endphp
 
 <x-layouts.storefront :title="$title" :active="$active">
-    <div class="card">
+    @push('styles')
+        <style>
+            .order-card { background:#fff; border:1px solid var(--spht-border); border-radius: var(--spht-radius); overflow:hidden; transition: border-color .15s ease, box-shadow .15s ease; }
+            .order-card:hover { border-color:#cbd5e1; box-shadow: 0 .5rem 1rem rgba(15,23,42,.04); }
+            .order-card-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.85rem 1.1rem; background:#f8fafc; border-bottom:1px solid var(--spht-border); flex-wrap:wrap; }
+            .order-card-head .left { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+            .order-card-head .right { display:flex; align-items:center; gap:.6rem; color:var(--spht-muted); font-size:.82rem; flex-wrap:wrap; }
+            .order-code { font-family:'SF Mono','Menlo',monospace; font-size:.88rem; font-weight:600; color:#0f172a; letter-spacing:.02em; }
+            .order-date { font-size:.78rem; color:var(--spht-muted); display:block; margin-top:.15rem; }
+            .method-chip { display:inline-flex; align-items:center; gap:.25rem; padding:.18rem .55rem; border-radius:999px; background:#eef2f7; color:#334155; font-size:.72rem; text-transform:uppercase; letter-spacing:.03em; font-weight:600; }
+
+            .order-line { display:flex; align-items:center; gap:.85rem; padding:.65rem 1.1rem; }
+            .order-line + .order-line { border-top:1px dashed #eef2f7; }
+            .order-line .thumb { width:52px; height:52px; border-radius:.55rem; object-fit:cover; background:#f6f8fa; border:1px solid #e5e7eb; flex-shrink:0; }
+            .order-line .name { font-weight:500; color:#1f2937; }
+            .order-line .muted { color:#94a3b8; font-style:italic; }
+            .order-line .qty  { color:var(--spht-muted); font-size:.85rem; }
+            .order-line .sub  { font-weight:600; color:#0f172a; white-space:nowrap; }
+
+            .order-card-foot { display:flex; justify-content:space-between; align-items:center; gap:.75rem; padding:.8rem 1.1rem; background:#fafbfc; border-top:1px solid var(--spht-border); flex-wrap:wrap; }
+            .order-total { font-size:.78rem; color:var(--spht-muted); }
+            .order-total strong { display:block; font-size:1.1rem; color:var(--spht-green-dark); }
+        </style>
+    @endpush
+
+    <div class="card mb-3">
         <div class="card-header">
             <h3 class="card-title">Riwayat Pesanan ({{ $items->total() }})</h3>
         </div>
@@ -28,42 +53,82 @@
                 </div>
             </x-slot>
         </x-table-toolbar>
+    </div>
 
-        <div class="table-responsive">
-            <table class="table table-vcenter card-table">
-                <thead>
-                    <tr>
-                        <th>#Order</th>
-                        <th>Tanggal</th>
-                        <th class="text-end">Total</th>
-                        <th>Metode</th>
-                        <th>Status</th>
-                        <th class="w-1"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($items as $order)
-                        <tr>
-                            <td>#{{ $order->id }}</td>
-                            <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
-                            <td class="text-end">Rp {{ number_format($order->total_harga, 0, ',', '.') }}</td>
-                            <td>{{ ucfirst($order->metode_pembayaran ?? '-') }}</td>
-                            <td><span class="badge {{ $order->status->badgeClass() }}">{{ $order->status->label() }}</span></td>
-                            <td><a href="#" class="btn btn-sm btn-outline-primary">Detail</a></td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="6" class="text-center text-secondary py-4">Belum ada pesanan.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
+    @forelse ($items as $order)
+        <div class="order-card mb-3">
+            <div class="order-card-head">
+                <div class="left">
+                    <div>
+                        <div class="order-code">{{ $order->code }}</div>
+                        <span class="order-date"><i class="ti ti-calendar me-1"></i>{{ $order->created_at->format('d M Y · H:i') }}</span>
+                    </div>
+                    <span class="badge {{ $order->status->badgeClass() }} ms-2">{{ $order->status->label() }}</span>
+                </div>
+                <div class="right">
+                    @if ($order->metode_pembayaran)
+                        <span class="method-chip">
+                            <i class="ti ti-{{ match($order->metode_pembayaran) {
+                                'transfer' => 'building-bank',
+                                'ewallet'  => 'wallet',
+                                'cod'      => 'cash',
+                                default    => 'credit-card'
+                            } }}"></i>
+                            {{ $order->metode_pembayaran }}
+                        </span>
+                    @endif
+                </div>
+            </div>
+
+            <div class="order-card-body">
+                @foreach ($order->items as $i)
+                    <div class="order-line">
+                        <img class="thumb" src="{{ $i->product?->image_url ?? asset('img/placeholder.png') }}"
+                             alt="{{ $i->product?->nama ?? 'produk dihapus' }}" loading="lazy" decoding="async">
+                        <div class="flex-grow-1 text-truncate">
+                            <div class="name text-truncate">
+                                @if ($i->product)
+                                    {{ $i->product->nama }}
+                                @else
+                                    <span class="muted">[produk dihapus]</span>
+                                @endif
+                            </div>
+                            <div class="qty">{{ $i->jumlah }} × Rp {{ number_format($i->harga, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="sub">Rp {{ number_format($i->harga * $i->jumlah, 0, ',', '.') }}</div>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="order-card-foot">
+                <div class="order-total">
+                    Total Pesanan
+                    <strong>Rp {{ number_format($order->total_harga, 0, ',', '.') }}</strong>
+                </div>
+                <a href="#" class="btn btn-outline-success btn-sm">
+                    Detail <i class="ti ti-arrow-right ms-1"></i>
+                </a>
+            </div>
         </div>
+    @empty
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="ti ti-shopping-bag mb-2" style="font-size:2.5rem;color:#cbd5e1"></i>
+                <div class="text-secondary mb-3">Belum ada pesanan.</div>
+                <a href="{{ route('pelanggan.katalog.index') }}" class="btn btn-success">
+                    <i class="ti ti-shopping-cart me-1"></i> Mulai Belanja
+                </a>
+            </div>
+        </div>
+    @endforelse
 
-        <div class="card-footer d-flex flex-wrap align-items-center justify-content-between gap-2">
+    @if ($items->hasPages())
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
             <div class="text-secondary small">
                 Menampilkan <strong>{{ $items->firstItem() ?? 0 }}</strong> - <strong>{{ $items->lastItem() ?? 0 }}</strong>
                 dari <strong>{{ $items->total() }}</strong>
             </div>
             {{ $items->links() }}
         </div>
-    </div>
+    @endif
 </x-layouts.storefront>

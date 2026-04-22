@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Petani;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Product;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProdukController extends Controller
@@ -53,5 +56,44 @@ class ProdukController extends Controller
     public function create(): View
     {
         return view('pages.petani.produk.form');
+    }
+
+    public function update(Request $request, Product $produk): RedirectResponse
+    {
+        abort_unless($produk->user_id === $request->user()->id, 403);
+
+        $data = $request->validate([
+            'nama'        => ['required', 'string', 'max:255'],
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'deskripsi'   => ['nullable', 'string', 'max:2000'],
+            'harga'       => ['required', 'integer', 'min:0'],
+            'stok'        => ['required', 'integer', 'min:0'],
+            'gambar'      => ['nullable', 'image', 'max:4096'],
+        ]);
+
+        if ($request->hasFile('gambar')) {
+            if ($produk->gambar && ! str_starts_with($produk->gambar, 'http')) {
+                Storage::disk('public')->delete($produk->gambar);
+            }
+            $data['gambar'] = $request->file('gambar')->store('products', 'public');
+        } else {
+            unset($data['gambar']);
+        }
+
+        $produk->update($data);
+
+        return back()->with('success', 'Produk "'.$produk->nama.'" berhasil diperbarui.');
+    }
+
+    public function destroy(Request $request, Product $produk): RedirectResponse
+    {
+        abort_unless($produk->user_id === $request->user()->id, 403);
+
+        $nama = $produk->nama;
+        $produk->delete();
+
+        return redirect()
+            ->route('petani.produk.index')
+            ->with('success', 'Produk "'.$nama.'" dihapus. Riwayat transaksi tetap tersimpan.');
     }
 }
