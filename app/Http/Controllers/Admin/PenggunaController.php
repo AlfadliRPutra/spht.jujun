@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class PenggunaController extends Controller
@@ -46,5 +49,62 @@ class PenggunaController extends Controller
             'sortOptions' => $sortOptions,
             'perPage'     => $perPage,
         ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'name'        => ['required', 'string', 'max:255'],
+            'email'       => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password'    => ['required', 'string', 'min:8'],
+            'role'        => ['required', Rule::in(array_column(UserRole::cases(), 'value'))],
+            'no_hp'       => ['nullable', 'string', 'max:20'],
+            'alamat'      => ['nullable', 'string', 'max:500'],
+            'is_verified' => ['sometimes', 'boolean'],
+        ]);
+
+        $data['password']    = Hash::make($data['password']);
+        $data['is_verified'] = $request->boolean('is_verified');
+
+        User::create($data);
+
+        return back()->with('success', 'Pengguna "'.$data['name'].'" ditambahkan.');
+    }
+
+    public function update(Request $request, User $pengguna): RedirectResponse
+    {
+        $data = $request->validate([
+            'name'        => ['required', 'string', 'max:255'],
+            'email'       => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($pengguna->id)],
+            'password'    => ['nullable', 'string', 'min:8'],
+            'role'        => ['required', Rule::in(array_column(UserRole::cases(), 'value'))],
+            'no_hp'       => ['nullable', 'string', 'max:20'],
+            'alamat'      => ['nullable', 'string', 'max:500'],
+            'is_verified' => ['sometimes', 'boolean'],
+        ]);
+
+        if (! empty($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        } else {
+            unset($data['password']);
+        }
+
+        $data['is_verified'] = $request->boolean('is_verified');
+
+        $pengguna->update($data);
+
+        return back()->with('success', 'Pengguna "'.$pengguna->name.'" diperbarui.');
+    }
+
+    public function destroy(Request $request, User $pengguna): RedirectResponse
+    {
+        if ($pengguna->id === $request->user()->id) {
+            return back()->with('error', 'Anda tidak bisa menghapus akun sendiri.');
+        }
+
+        $nama = $pengguna->name;
+        $pengguna->delete();
+
+        return back()->with('success', 'Pengguna "'.$nama.'" dihapus.');
     }
 }

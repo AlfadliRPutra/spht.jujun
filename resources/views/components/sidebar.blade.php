@@ -4,7 +4,8 @@
     use App\Enums\UserRole;
     use App\Models\User;
 
-    $role = auth()->user()?->role;
+    $user = auth()->user();
+    $role = $user?->role;
 
     $pendingVerif = $role === UserRole::Admin
         ? User::where('role', UserRole::Petani)
@@ -13,14 +14,18 @@
             ->count()
         : 0;
 
+    $petaniItems = [
+        ['key' => 'dashboard',      'label' => 'Beranda',          'icon' => 'home',      'route' => 'dashboard'],
+        ['key' => 'petani.produk',  'label' => 'Produk Saya',      'icon' => 'package',   'route' => 'petani.produk.index'],
+        ['key' => 'petani.pesanan', 'label' => 'Pesanan Masuk',    'icon' => 'cart',      'route' => 'petani.pesanan.index'],
+        ['key' => 'petani.laporan', 'label' => 'Riwayat Transaksi','icon' => 'file-text', 'route' => 'petani.laporan.index'],
+    ];
+    if ($role === UserRole::Petani && ! $user->is_verified) {
+        $petaniItems[] = ['key' => 'petani.verifikasi', 'label' => 'Verifikasi Akun', 'icon' => 'shield', 'route' => 'petani.verifikasi.index'];
+    }
+
     $navItems = match ($role) {
-        UserRole::Petani => [
-            ['key' => 'dashboard',          'label' => 'Beranda',         'icon' => 'home',      'route' => 'dashboard'],
-            ['key' => 'petani.produk',      'label' => 'Produk Saya',     'icon' => 'package',   'route' => 'petani.produk.index'],
-            ['key' => 'petani.pesanan',     'label' => 'Pesanan Masuk',   'icon' => 'cart',      'route' => 'petani.pesanan.index'],
-            ['key' => 'petani.laporan',     'label' => 'Riwayat Transaksi','icon' => 'file-text', 'route' => 'petani.laporan.index'],
-            ['key' => 'petani.verifikasi',  'label' => 'Verifikasi Akun', 'icon' => 'shield',    'route' => 'petani.verifikasi.index'],
-        ],
+        UserRole::Petani => $petaniItems,
         UserRole::Pelanggan => [
             ['key' => 'dashboard',           'label' => 'Beranda',       'icon' => 'home',      'route' => 'dashboard'],
             ['key' => 'pelanggan.katalog',   'label' => 'Belanja',       'icon' => 'package',   'route' => 'pelanggan.katalog.index'],

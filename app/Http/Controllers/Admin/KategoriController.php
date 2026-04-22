@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -37,6 +38,55 @@ class KategoriController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        return view('pages.admin.kategori.index', compact('items', 'sort', 'sortOptions', 'perPage'));
+        $roots = Category::whereNull('parent_id')->orderBy('nama')->get(['id', 'nama']);
+
+        return view('pages.admin.kategori.index', compact('items', 'sort', 'sortOptions', 'perPage', 'roots'));
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $this->validated($request);
+        Category::create($data);
+
+        return back()->with('success', 'Kategori "'.$data['nama'].'" ditambahkan.');
+    }
+
+    public function update(Request $request, Category $kategori): RedirectResponse
+    {
+        $data = $this->validated($request, $kategori);
+
+        if (! empty($data['parent_id']) && (int) $data['parent_id'] === $kategori->id) {
+            return back()->withErrors(['parent_id' => 'Kategori tidak bisa menjadi parent dirinya sendiri.']);
+        }
+
+        $kategori->update($data);
+
+        return back()->with('success', 'Kategori "'.$kategori->nama.'" diperbarui.');
+    }
+
+    public function destroy(Category $kategori): RedirectResponse
+    {
+        if ($kategori->products()->exists()) {
+            return back()->with('error', 'Kategori "'.$kategori->nama.'" tidak bisa dihapus karena masih memiliki produk.');
+        }
+
+        if ($kategori->children()->exists()) {
+            return back()->with('error', 'Kategori "'.$kategori->nama.'" masih memiliki sub-kategori. Hapus atau pindahkan dulu.');
+        }
+
+        $nama = $kategori->nama;
+        $kategori->delete();
+
+        return back()->with('success', 'Kategori "'.$nama.'" dihapus.');
+    }
+
+    private function validated(Request $request, ?Category $current = null): array
+    {
+        return $request->validate([
+            'nama'       => ['required', 'string', 'max:255'],
+            'parent_id'  => ['nullable', 'integer', 'exists:categories,id'],
+            'icon'       => ['nullable', 'string', 'max:50'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
     }
 }

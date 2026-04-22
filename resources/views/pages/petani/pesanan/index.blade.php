@@ -70,6 +70,10 @@
                             <td class="text-end">Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
                             <td><span class="badge {{ $order->status->badgeClass() }}">{{ $order->status->label() }}</span></td>
                             <td class="text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        data-bs-toggle="modal" data-bs-target="#detail-order-{{ $order->id }}">
+                                    <i class="ti ti-eye"></i>
+                                </button>
                                 @if ($order->status === OrderStatus::Dibayar)
                                     <form action="{{ route('petani.pesanan.ship', $order) }}" method="POST" class="d-inline"
                                           onsubmit="return confirm('Tandai pesanan #{{ $order->id }} sebagai dikirim?');">
@@ -127,4 +131,89 @@
             {{ $items->links() }}
         </div>
     </div>
+
+    @foreach ($items as $order)
+        @php
+            $ownItems = $order->items->filter(fn ($i) => $i->product?->user_id === $petaniId);
+            $subtotal = $ownItems->sum(fn ($i) => $i->harga * $i->jumlah);
+        @endphp
+        <div class="modal modal-blur fade" id="detail-order-{{ $order->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title mb-0">Detail Pesanan</h5>
+                            <div class="text-secondary small">{{ $order->code }} &middot; {{ $order->created_at->format('d M Y · H:i') }}</div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <span class="badge {{ $order->status->badgeClass() }}">{{ $order->status->label() }}</span>
+                            @if ($order->metode_pembayaran)
+                                <span class="badge bg-secondary-lt"><i class="ti ti-credit-card me-1"></i>{{ ucfirst($order->metode_pembayaran) }}</span>
+                            @endif
+                        </div>
+
+                        <h6 class="text-uppercase text-secondary small fw-bold mb-2">Produk Anda di pesanan ini</h6>
+                        <div class="border rounded mb-3">
+                            @foreach ($ownItems as $i)
+                                <div class="d-flex align-items-center gap-3 p-2 {{ ! $loop->last ? 'border-bottom' : '' }}">
+                                    <img src="{{ $i->product?->image_url ?? asset('img/placeholder.png') }}"
+                                         alt="" style="width:44px;height:44px;object-fit:cover;border-radius:.5rem;background:#f6f8fa"
+                                         loading="lazy">
+                                    <div class="flex-fill">
+                                        <div class="fw-medium">
+                                            @if ($i->product)
+                                                {{ $i->product->nama }}
+                                            @else
+                                                <span class="text-secondary fst-italic">[produk dihapus]</span>
+                                            @endif
+                                        </div>
+                                        <div class="text-secondary small">{{ $i->jumlah }} × Rp {{ number_format($i->harga, 0, ',', '.') }}</div>
+                                    </div>
+                                    <div class="fw-semibold">Rp {{ number_format($i->harga * $i->jumlah, 0, ',', '.') }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <h6 class="text-uppercase text-secondary small fw-bold mb-2">Pelanggan</h6>
+                                <div class="border rounded p-3 small">
+                                    <div class="fw-medium">{{ $order->user->name }}</div>
+                                    <div class="text-secondary">{{ $order->user->no_hp ?? '—' }}</div>
+                                    <div class="text-secondary mt-1">{{ $order->user->alamat ?? '—' }}</div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <h6 class="text-uppercase text-secondary small fw-bold mb-2">Ringkasan Bagian Anda</h6>
+                                <div class="border rounded p-3">
+                                    <div class="d-flex justify-content-between fw-bold">
+                                        <span>Subtotal Produk</span>
+                                        <span class="text-success">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="text-secondary small mt-1">{{ $ownItems->sum('jumlah') }} unit terjual dari Anda</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">Tutup</button>
+                        @if ($order->status === OrderStatus::Dibayar)
+                            <form action="{{ route('petani.pesanan.ship', $order) }}" method="POST" class="m-0">
+                                @csrf
+                                <button class="btn btn-primary"><i class="ti ti-truck-delivery me-1"></i> Tandai Dikirim</button>
+                            </form>
+                        @elseif ($order->status === OrderStatus::Dikirim)
+                            <form action="{{ route('petani.pesanan.complete', $order) }}" method="POST" class="m-0">
+                                @csrf
+                                <button class="btn btn-success"><i class="ti ti-circle-check me-1"></i> Selesaikan</button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endforeach
 </x-layouts.app>
