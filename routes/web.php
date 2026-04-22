@@ -11,6 +11,7 @@ use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\Pelanggan\PesananController as PelangganPesananController;
 use App\Http\Controllers\Petani\ProdukController as PetaniProdukController;
 use App\Http\Controllers\Petani\PesananController as PetaniPesananController;
+use App\Http\Controllers\Petani\VerifikasiController as PetaniVerifikasiController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +43,11 @@ Route::middleware('auth')->group(function () {
         });
         Route::get('/pesanan', [PetaniPesananController::class, 'index'])->name('pesanan.index');
         Route::view('/laporan', 'pages.petani.laporan.index')->name('laporan.index');
+
+        Route::prefix('verifikasi')->name('verifikasi.')->group(function () {
+            Route::get('/',  [PetaniVerifikasiController::class, 'index'])->name('index');
+            Route::post('/', [PetaniVerifikasiController::class, 'store'])->name('store');
+        });
     });
 
     Route::middleware('role:pelanggan')->prefix('pelanggan')->name('pelanggan.')->group(function () {
@@ -54,7 +60,12 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/pengguna',          [AdminPenggunaController::class, 'index'])->name('pengguna.index');
-        Route::get('/verifikasi-petani', [AdminVerifikasiController::class, 'index'])->name('verifikasi.index');
+        Route::prefix('verifikasi-petani')->name('verifikasi.')->group(function () {
+            Route::get('/',                 [AdminVerifikasiController::class, 'index'])->name('index');
+            Route::get('/{petani}',         [AdminVerifikasiController::class, 'show'])->name('show');
+            Route::post('/{petani}/approve',[AdminVerifikasiController::class, 'approve'])->name('approve');
+            Route::post('/{petani}/reject', [AdminVerifikasiController::class, 'reject'])->name('reject');
+        });
         Route::get('/produk',            [AdminProdukController::class, 'index'])->name('produk.index');
         Route::get('/kategori',          [AdminKategoriController::class, 'index'])->name('kategori.index');
 

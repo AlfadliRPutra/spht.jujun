@@ -7,10 +7,11 @@
 
     $navItems = match ($role) {
         UserRole::Petani => [
-            ['key' => 'dashboard',      'label' => 'Beranda',         'icon' => 'home',      'route' => 'dashboard'],
-            ['key' => 'petani.produk',  'label' => 'Produk Saya',     'icon' => 'package',   'route' => 'petani.produk.index'],
-            ['key' => 'petani.pesanan', 'label' => 'Pesanan Masuk',   'icon' => 'cart',      'route' => 'petani.pesanan.index'],
-            ['key' => 'petani.laporan', 'label' => 'Laporan',         'icon' => 'file-text', 'route' => 'petani.laporan.index'],
+            ['key' => 'dashboard',          'label' => 'Beranda',         'icon' => 'home',      'route' => 'dashboard'],
+            ['key' => 'petani.produk',      'label' => 'Produk Saya',     'icon' => 'package',   'route' => 'petani.produk.index'],
+            ['key' => 'petani.pesanan',     'label' => 'Pesanan Masuk',   'icon' => 'cart',      'route' => 'petani.pesanan.index'],
+            ['key' => 'petani.laporan',     'label' => 'Laporan',         'icon' => 'file-text', 'route' => 'petani.laporan.index'],
+            ['key' => 'petani.verifikasi',  'label' => 'Verifikasi Akun', 'icon' => 'shield',    'route' => 'petani.verifikasi.index'],
         ],
         UserRole::Pelanggan => [
             ['key' => 'dashboard',           'label' => 'Beranda',       'icon' => 'home',      'route' => 'dashboard'],

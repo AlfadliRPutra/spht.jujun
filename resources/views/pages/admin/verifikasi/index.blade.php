@@ -2,48 +2,98 @@
     /** @var \Illuminate\Pagination\LengthAwarePaginator $items */
     $title  = 'Verifikasi Petani';
     $active = 'admin.verifikasi';
+
+    $badgeFor = fn (string $s) => match ($s) {
+        'verified'      => ['bg-green',  'Terverifikasi'],
+        'pending'       => ['bg-blue',   'Menunggu Review'],
+        'rejected'      => ['bg-red',    'Ditolak'],
+        default         => ['bg-yellow', 'Belum Diajukan'],
+    };
 @endphp
 
 <x-layouts.app :title="$title" :active="$active">
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible" role="alert">
+            {{ session('success') }}
+            <a class="btn-close" data-bs-dismiss="alert"></a>
+        </div>
+    @endif
+
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Petani Menunggu Verifikasi ({{ $items->total() }})</h3>
+            <h3 class="card-title">Verifikasi Petani ({{ $items->total() }})</h3>
         </div>
 
         <x-table-toolbar
             :action="route('admin.verifikasi.index')"
-            placeholder="Cari nama atau email..."
+            placeholder="Cari nama, email, atau nama usaha..."
             :sort-options="$sortOptions"
             :sort="$sort"
-            :per-page="$perPage" />
+            :per-page="$perPage">
+            <x-slot name="filters">
+                <div>
+                    <label class="form-label small text-secondary mb-1">Status</label>
+                    <select name="status" class="form-select" style="min-width:170px">
+                        <option value="pending"       @selected($statusFilter === 'pending')>Menunggu Review</option>
+                        <option value="verified"      @selected($statusFilter === 'verified')>Terverifikasi</option>
+                        <option value="rejected"      @selected($statusFilter === 'rejected')>Ditolak</option>
+                        <option value="not_submitted" @selected($statusFilter === 'not_submitted')>Belum Diajukan</option>
+                        <option value="all"           @selected($statusFilter === 'all')>Semua</option>
+                    </select>
+                </div>
+            </x-slot>
+        </x-table-toolbar>
 
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
                 <thead>
                     <tr>
-                        <th>Nama</th>
-                        <th>Email</th>
-                        <th>No. HP</th>
-                        <th>Alamat</th>
-                        <th>Tanggal Daftar</th>
-                        <th class="w-1"></th>
+                        <th>Petani</th>
+                        <th>Nama Usaha</th>
+                        <th>NIK</th>
+                        <th>KTP</th>
+                        <th>Status</th>
+                        <th>Diajukan</th>
+                        <th class="w-1 text-end">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($items as $p)
+                        @php([$badgeClass, $badgeLabel] = $badgeFor($p->verificationStatus()))
                         <tr>
-                            <td>{{ $p->name }}</td>
-                            <td>{{ $p->email }}</td>
-                            <td>{{ $p->no_hp ?? '-' }}</td>
-                            <td class="text-truncate" style="max-width:260px">{{ $p->alamat ?? '-' }}</td>
-                            <td>{{ $p->created_at->format('d/m/Y') }}</td>
-                            <td class="d-flex gap-1">
-                                <button class="btn btn-sm btn-success">Setujui</button>
-                                <button class="btn btn-sm btn-outline-danger">Tolak</button>
+                            <td>
+                                <div class="fw-semibold">{{ $p->name }}</div>
+                                <div class="text-secondary small">{{ $p->email }}</div>
+                            </td>
+                            <td>{{ $p->nama_usaha ?? '—' }}</td>
+                            <td><code class="small">{{ $p->nik ?? '—' }}</code></td>
+                            <td>
+                                @if ($p->ktp_image_url)
+                                    <a href="{{ $p->ktp_image_url }}" target="_blank">
+                                        <img src="{{ $p->ktp_image_url }}" alt="KTP"
+                                             style="width:60px;height:40px;object-fit:cover;border-radius:.35rem;border:1px solid #e7eaf0"
+                                             loading="lazy">
+                                    </a>
+                                @else
+                                    <span class="text-secondary small">Tidak ada</span>
+                                @endif
+                            </td>
+                            <td><span class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span></td>
+                            <td class="small">
+                                @if ($p->verification_submitted_at)
+                                    {{ $p->verification_submitted_at->format('d/m/Y H:i') }}
+                                @else
+                                    <span class="text-secondary">—</span>
+                                @endif
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ route('admin.verifikasi.show', $p) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="ti ti-eye me-1"></i> Detail
+                                </a>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="text-center text-secondary py-4">Tidak ada petani yang perlu diverifikasi.</td></tr>
+                        <tr><td colspan="7" class="text-center text-secondary py-4">Tidak ada data.</td></tr>
                     @endforelse
                 </tbody>
             </table>
