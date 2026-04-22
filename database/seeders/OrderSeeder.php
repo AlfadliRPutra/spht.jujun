@@ -23,12 +23,12 @@ class OrderSeeder extends Seeder
 
         // [status, metode_pembayaran, created_days_ago, [products_index => jumlah]]
         $blueprints = [
-            [OrderStatus::Pending, 'transfer', 0, [[0, 2], [1, 1]]],
-            [OrderStatus::Dibayar, 'ewallet',  1, [[2, 3]]],
-            [OrderStatus::Dibayar, 'transfer', 2, [[3, 1], [4, 2]]],
-            [OrderStatus::Dikirim, 'transfer', 3, [[5, 2]]],
-            [OrderStatus::Selesai, 'cod',      7, [[6, 4]]],
-            [OrderStatus::Batal,   'transfer', 5, [[7, 1]]],
+            [OrderStatus::Pending, 'midtrans', 0, [[0, 2], [1, 1]]],
+            [OrderStatus::Dibayar, 'midtrans', 1, [[2, 3]]],
+            [OrderStatus::Dibayar, 'midtrans', 2, [[3, 1], [4, 2]]],
+            [OrderStatus::Dikirim, 'midtrans', 3, [[5, 2]]],
+            [OrderStatus::Selesai, 'midtrans', 7, [[6, 4]]],
+            [OrderStatus::Batal,   'midtrans', 5, [[7, 1]]],
         ];
 
         foreach ($blueprints as [$status, $metode, $daysAgo, $lines]) {

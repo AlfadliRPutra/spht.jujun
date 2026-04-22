@@ -26,6 +26,7 @@ class PesananController extends Controller
             ? (int) $request->input('per_page') : 10;
 
         $items = $request->user()->orders()
+            ->with('items.product')
             ->when($request->filled('q'),      fn ($q) => $q->where('id', $request->input('q')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
             ->orderBy($sortCol, $sortDir)

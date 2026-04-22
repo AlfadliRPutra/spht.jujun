@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\VerifikasiController as AdminVerifikasiController
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\Pelanggan\PesananController as PelangganPesananController;
+use App\Http\Controllers\Petani\LaporanController as PetaniLaporanController;
 use App\Http\Controllers\Petani\ProdukController as PetaniProdukController;
 use App\Http\Controllers\Petani\PesananController as PetaniPesananController;
 use App\Http\Controllers\Petani\VerifikasiController as PetaniVerifikasiController;
@@ -38,8 +39,10 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:petani')->prefix('petani')->name('petani.')->group(function () {
         Route::prefix('produk')->name('produk.')->group(function () {
-            Route::get('/',       [PetaniProdukController::class, 'index'])->name('index');
-            Route::get('/create', [PetaniProdukController::class, 'create'])->name('create');
+            Route::get('/',                 [PetaniProdukController::class, 'index'])->name('index');
+            Route::get('/create',           [PetaniProdukController::class, 'create'])->name('create');
+            Route::put('/{produk:slug}',    [PetaniProdukController::class, 'update'])->name('update');
+            Route::delete('/{produk:slug}', [PetaniProdukController::class, 'destroy'])->name('destroy');
             Route::post('/',      [PetaniProdukController::class, 'store'])->name('store');
         });
         Route::prefix('pesanan')->name('pesanan.')->group(function () {
@@ -48,7 +51,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/{order}/complete',    [PetaniPesananController::class, 'complete'])->name('complete');
             Route::post('/{order}/cancel',      [PetaniPesananController::class, 'cancel'])->name('cancel');
         });
-        Route::view('/laporan', 'pages.petani.laporan.index')->name('laporan.index');
+        Route::get('/laporan', [PetaniLaporanController::class, 'index'])->name('laporan.index');
 
         Route::prefix('verifikasi')->name('verifikasi.')->group(function () {
             Route::get('/',         [PetaniVerifikasiController::class, 'index'])->name('index');

@@ -4,11 +4,6 @@
     $cart   = auth()->user()->cart()->with('items.product')->first();
     $items  = $cart?->items ?? collect();
     $total  = $items->sum(fn ($i) => $i->product->harga * $i->jumlah);
-    $metodePembayaran = [
-        'transfer' => 'Transfer Bank',
-        'ewallet'  => 'E-Wallet',
-        'cod'      => 'Bayar di Tempat (COD)',
-    ];
 @endphp
 
 <x-layouts.storefront :title="$title" :active="$active">
@@ -35,14 +30,17 @@
             <div class="card">
                 <div class="card-header"><h3 class="card-title">Metode Pembayaran</h3></div>
                 <div class="card-body">
-                    @foreach ($metodePembayaran as $value => $label)
-                        <label class="form-selectgroup-item d-block mb-2">
-                            <input type="radio" name="metode" value="{{ $value }}" class="form-selectgroup-input" @checked($loop->first)>
-                            <span class="form-selectgroup-label d-flex align-items-center p-3">
-                                <span class="form-selectgroup-label-content">{{ $label }}</span>
-                            </span>
-                        </label>
-                    @endforeach
+                    <input type="hidden" name="metode" value="midtrans">
+                    <div class="d-flex align-items-center gap-3 p-3 rounded border" style="background:#f8fafc">
+                        <div class="avatar avatar-md bg-primary-lt rounded">
+                            <i class="ti ti-credit-card" style="font-size:1.6rem"></i>
+                        </div>
+                        <div class="flex-fill">
+                            <div class="fw-semibold">Pembayaran via Midtrans</div>
+                            <div class="text-secondary small">Virtual Account, QRIS, E-Wallet, Kartu Kredit &mdash; pilih di halaman berikutnya.</div>
+                        </div>
+                        <span class="badge bg-green-lt"><i class="ti ti-shield-check me-1"></i>Aman</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -68,7 +66,9 @@
                     </div>
                 </div>
                 <div class="card-footer">
-                    <button class="btn btn-primary w-100">Lanjut ke Pembayaran</button>
+                    <button class="btn btn-success w-100">
+                        <i class="ti ti-credit-card me-1"></i> Bayar via Midtrans
+                    </button>
                 </div>
             </div>
         </div>

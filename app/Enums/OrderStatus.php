@@ -24,11 +24,11 @@ enum OrderStatus: string
     public function badgeClass(): string
     {
         return match ($this) {
-            self::Pending => 'bg-yellow',
-            self::Dibayar => 'bg-blue',
-            self::Dikirim => 'bg-cyan',
-            self::Selesai => 'bg-green',
-            self::Batal   => 'bg-red',
+            self::Pending => 'bg-yellow-lt',
+            self::Dibayar => 'bg-blue-lt',
+            self::Dikirim => 'bg-cyan-lt',
+            self::Selesai => 'bg-green-lt',
+            self::Batal   => 'bg-red-lt',
         };
     }
 }
