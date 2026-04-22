@@ -35,14 +35,14 @@
 
     @if ($verificationStatus === 'rejected')
         <div class="col-12">
-            <div class="card card-status-start border-danger">
+            <div class="card position-relative overflow-hidden">
                 <div class="card-status-start bg-danger"></div>
                 <div class="card-body">
                     <div class="d-flex align-items-start gap-3 flex-wrap">
                         <div class="text-danger">
                             <i class="ti ti-circle-x" style="font-size:2rem"></i>
                         </div>
-                        <div class="flex-fill">
+                        <div class="flex-fill" style="min-width:0">
                             <div class="h3 text-danger mb-1">Pengajuan Verifikasi Ditolak</div>
                             <div class="text-secondary mb-2">
                                 Admin menolak pengajuan verifikasi Anda. Silakan baca catatan di bawah, perbaiki data, lalu ajukan ulang agar produk Anda bisa tampil di katalog.
