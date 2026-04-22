@@ -20,10 +20,10 @@
         ],
         UserRole::Admin => [
             ['key' => 'dashboard',         'label' => 'Dashboard',         'icon' => 'home',     'route' => 'dashboard'],
-            ['key' => 'admin.pengguna',    'label' => 'Pengguna',          'icon' => 'users',    'route' => 'admin.pengguna.index'],
+            ['key' => 'admin.pengguna',    'label' => 'Manajemen Pengguna',          'icon' => 'users',    'route' => 'admin.pengguna.index'],
             ['key' => 'admin.verifikasi',  'label' => 'Verifikasi Petani', 'icon' => 'shield',   'route' => 'admin.verifikasi.index'],
-            ['key' => 'admin.produk',      'label' => 'Produk',            'icon' => 'package',  'route' => 'admin.produk.index'],
-            ['key' => 'admin.kategori',    'label' => 'Kategori',          'icon' => 'category', 'route' => 'admin.kategori.index'],
+            ['key' => 'admin.produk',      'label' => 'Manajemen Produk',            'icon' => 'package',  'route' => 'admin.produk.index'],
+            ['key' => 'admin.kategori',    'label' => 'Manajemen Kategori',          'icon' => 'category', 'route' => 'admin.kategori.index'],
         ],
         default => [
             ['key' => 'dashboard', 'label' => 'Beranda', 'icon' => 'home', 'route' => 'dashboard'],
