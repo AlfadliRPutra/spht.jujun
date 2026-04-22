@@ -1,5 +1,5 @@
 @php
-    /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\HeroSlide> $slides */
+    /** @var \Illuminate\Pagination\LengthAwarePaginator $items */
     $title  = 'Hero Banner';
     $active = 'admin.hero';
 @endphp
@@ -15,13 +15,32 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <div>
-                <h3 class="card-title mb-0">Hero Banner Katalog</h3>
+                <h3 class="card-title mb-0">Hero Banner Katalog ({{ $items->total() }})</h3>
                 <div class="text-secondary small">Atur banner yang tampil di atas halaman katalog pelanggan.</div>
             </div>
             <a href="{{ route('admin.hero.create') }}" class="btn btn-primary">
                 <i class="ti ti-plus me-1"></i> Tambah Banner
             </a>
         </div>
+
+        <x-table-toolbar
+            :action="route('admin.hero.index')"
+            placeholder="Cari judul banner..."
+            :sort-options="$sortOptions"
+            :sort="$sort"
+            :per-page="$perPage">
+            <x-slot name="filters">
+                <div>
+                    <label class="form-label small text-secondary mb-1">Status</label>
+                    <select name="active" class="form-select" style="min-width:130px">
+                        <option value="">Semua</option>
+                        <option value="1" @selected(request('active') === '1')>Aktif</option>
+                        <option value="0" @selected(request('active') === '0')>Nonaktif</option>
+                    </select>
+                </div>
+            </x-slot>
+        </x-table-toolbar>
+
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
                 <thead>
@@ -36,12 +55,13 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($slides as $slide)
+                    @forelse ($items as $slide)
                         <tr>
-                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ ($items->firstItem() ?? 0) + $loop->index }}</td>
                             <td>
                                 <img src="{{ $slide->image_url }}" alt="{{ $slide->title }}"
-                                     class="rounded" style="width:120px;height:64px;object-fit:cover;background:#f6f8fa">
+                                     class="rounded" style="width:120px;height:64px;object-fit:cover;background:#f6f8fa"
+                                     loading="lazy" decoding="async">
                             </td>
                             <td>
                                 <div class="fw-semibold">{{ $slide->title }}</div>
@@ -92,6 +112,14 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+
+        <div class="card-footer d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="text-secondary small">
+                Menampilkan <strong>{{ $items->firstItem() ?? 0 }}</strong> - <strong>{{ $items->lastItem() ?? 0 }}</strong>
+                dari <strong>{{ $items->total() }}</strong>
+            </div>
+            {{ $items->links() }}
         </div>
     </div>
 </x-layouts.app>

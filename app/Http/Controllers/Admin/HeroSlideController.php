@@ -11,10 +11,31 @@ use Illuminate\View\View;
 
 class HeroSlideController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $slides = HeroSlide::orderBy('sort_order')->orderBy('id')->get();
-        return view('pages.admin.hero.index', compact('slides'));
+        $sortMap = [
+            'sort_order' => ['sort_order', 'asc',  'Urutan'],
+            'latest'     => ['created_at', 'desc', 'Terbaru'],
+            'oldest'     => ['created_at', 'asc',  'Terlama'],
+            'title_asc'  => ['title',      'asc',  'Judul A-Z'],
+        ];
+        $sortOptions = array_map(fn ($v) => $v[2], $sortMap);
+        $sort = array_key_exists($request->input('sort'), $sortMap) ? $request->input('sort') : 'sort_order';
+        [$sortCol, $sortDir] = $sortMap[$sort];
+
+        $perPage = in_array((int) $request->input('per_page'), [10, 25, 50, 100], true)
+            ? (int) $request->input('per_page') : 10;
+
+        $items = HeroSlide::query()
+            ->when($request->filled('q'), fn ($q) => $q->where('title', 'like', '%'.$request->input('q').'%'))
+            ->when($request->input('active') === '1', fn ($q) => $q->where('is_active', true))
+            ->when($request->input('active') === '0', fn ($q) => $q->where('is_active', false))
+            ->orderBy($sortCol, $sortDir)
+            ->orderBy('id')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return view('pages.admin.hero.index', compact('items', 'sort', 'sortOptions', 'perPage'));
     }
 
     public function create(): View
