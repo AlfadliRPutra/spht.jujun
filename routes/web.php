@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\TokoController as AdminTokoController;
 use App\Http\Controllers\Admin\VerifikasiController as AdminVerifikasiController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\KatalogController;
+use App\Http\Controllers\Pelanggan\PembayaranController as PelangganPembayaranController;
 use App\Http\Controllers\Pelanggan\PesananController as PelangganPesananController;
 use App\Http\Controllers\Petani\LaporanController as PetaniLaporanController;
 use App\Http\Controllers\Petani\ProdukController as PetaniProdukController;
@@ -22,6 +23,9 @@ Route::prefix('katalog')->name('pelanggan.katalog.')->group(function () {
     Route::get('/',              [KatalogController::class, 'index'])->name('index');
     Route::get('/{produk:slug}', [KatalogController::class, 'show'])->name('show');
 });
+
+Route::post('/midtrans/notification', [PelangganPembayaranController::class, 'notification'])
+    ->name('midtrans.notification');
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
@@ -64,7 +68,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/keranjang',  [CartController::class, 'store'])->name('keranjang.store');
         Route::view('/keranjang',  'pages.pelanggan.keranjang.index')->name('keranjang.index');
         Route::view('/checkout',   'pages.pelanggan.checkout.index')->name('checkout.index');
-        Route::view('/pembayaran', 'pages.pelanggan.pembayaran.index')->name('pembayaran.index');
+
+        Route::post('/pembayaran',                    [PelangganPembayaranController::class, 'store'])->name('pembayaran.store');
+        Route::get('/pembayaran',                     [PelangganPembayaranController::class, 'latest'])->name('pembayaran.latest');
+        Route::get('/pembayaran/{order}',             [PelangganPembayaranController::class, 'show'])->name('pembayaran.show');
+        Route::get('/pembayaran/{order}/finish',      [PelangganPembayaranController::class, 'finish'])->name('pembayaran.finish');
+        Route::get('/pembayaran/{order}/unfinish',    [PelangganPembayaranController::class, 'unfinish'])->name('pembayaran.unfinish');
+        Route::get('/pembayaran/{order}/error',       [PelangganPembayaranController::class, 'error'])->name('pembayaran.error');
+        Route::post('/pembayaran/{order}/sync',       [PelangganPembayaranController::class, 'sync'])->name('pembayaran.sync');
+
         Route::get('/pesanan',     [PelangganPesananController::class, 'index'])->name('pesanan.index');
     });
 

@@ -47,7 +47,7 @@
                     <select name="status" class="form-select" style="min-width:170px">
                         <option value="">Semua</option>
                         @foreach ($statuses as $s)
-                            <option value="{{ $s->value }}" @selected(request('status') === $s->value)>{{ $s->label() }}</option>
+                            <option value="{{ $s->value }}" @selected(request('status') === $s->value)>{{ $s->customerLabel() }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -63,7 +63,7 @@
                         <div class="order-code">{{ $order->code }}</div>
                         <span class="order-date"><i class="ti ti-calendar me-1"></i>{{ $order->created_at->format('d M Y · H:i') }}</span>
                     </div>
-                    <span class="badge {{ $order->status->badgeClass() }} ms-2">{{ $order->status->label() }}</span>
+                    <span class="badge {{ $order->status->badgeClass() }} ms-2">{{ $order->status->customerLabel() }}</span>
                 </div>
                 <div class="right">
                     @if ($order->metode_pembayaran)
@@ -105,9 +105,23 @@
                     Total Pesanan
                     <strong>Rp {{ number_format($order->total_harga, 0, ',', '.') }}</strong>
                 </div>
-                <a href="#" class="btn btn-outline-success btn-sm">
-                    Detail <i class="ti ti-arrow-right ms-1"></i>
-                </a>
+                <div class="d-flex gap-2 flex-wrap">
+                    @if ($order->status === \App\Enums\OrderStatus::Pending && $order->metode_pembayaran === 'midtrans')
+                        <form action="{{ route('pelanggan.pembayaran.sync', $order) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                <i class="ti ti-refresh me-1"></i> Cek Status
+                            </button>
+                        </form>
+                        <a href="{{ route('pelanggan.pembayaran.show', $order) }}" class="btn btn-success btn-sm">
+                            <i class="ti ti-credit-card me-1"></i> Lanjutkan Bayar
+                        </a>
+                    @else
+                        <a href="#" class="btn btn-outline-success btn-sm">
+                            Detail <i class="ti ti-arrow-right ms-1"></i>
+                        </a>
+                    @endif
+                </div>
             </div>
         </div>
     @empty

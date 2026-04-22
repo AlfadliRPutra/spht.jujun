@@ -15,6 +15,14 @@ class Order extends Model
         'total_harga',
         'status',
         'metode_pembayaran',
+        'snap_token',
+        'midtrans_order_id',
+        'payment_type',
+        'payment_status',
+        'nama_penerima',
+        'no_hp_penerima',
+        'alamat_pengiriman',
+        'paid_at',
     ];
 
     protected function casts(): array
@@ -22,6 +30,7 @@ class Order extends Model
         return [
             'total_harga' => 'decimal:2',
             'status'      => OrderStatus::class,
+            'paid_at'     => 'datetime',
         ];
     }
 
