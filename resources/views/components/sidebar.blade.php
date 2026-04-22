@@ -7,10 +7,11 @@
 
     $navItems = match ($role) {
         UserRole::Petani => [
-            ['key' => 'dashboard',      'label' => 'Beranda',         'icon' => 'home',      'route' => 'dashboard'],
-            ['key' => 'petani.produk',  'label' => 'Produk Saya',     'icon' => 'package',   'route' => 'petani.produk.index'],
-            ['key' => 'petani.pesanan', 'label' => 'Pesanan Masuk',   'icon' => 'cart',      'route' => 'petani.pesanan.index'],
-            ['key' => 'petani.laporan', 'label' => 'Laporan',         'icon' => 'file-text', 'route' => 'petani.laporan.index'],
+            ['key' => 'dashboard',          'label' => 'Beranda',         'icon' => 'home',      'route' => 'dashboard'],
+            ['key' => 'petani.produk',      'label' => 'Produk Saya',     'icon' => 'package',   'route' => 'petani.produk.index'],
+            ['key' => 'petani.pesanan',     'label' => 'Pesanan Masuk',   'icon' => 'cart',      'route' => 'petani.pesanan.index'],
+            ['key' => 'petani.laporan',     'label' => 'Laporan',         'icon' => 'file-text', 'route' => 'petani.laporan.index'],
+            ['key' => 'petani.verifikasi',  'label' => 'Verifikasi Akun', 'icon' => 'shield',    'route' => 'petani.verifikasi.index'],
         ],
         UserRole::Pelanggan => [
             ['key' => 'dashboard',           'label' => 'Beranda',       'icon' => 'home',      'route' => 'dashboard'],
@@ -22,7 +23,7 @@
             ['key' => 'dashboard',         'label' => 'Dashboard',         'icon' => 'home',     'route' => 'dashboard'],
             ['key' => 'admin.pengguna',    'label' => 'Manajemen Pengguna',          'icon' => 'users',    'route' => 'admin.pengguna.index'],
             ['key' => 'admin.verifikasi',  'label' => 'Verifikasi Petani',  'icon' => 'shield',   'route' => 'admin.verifikasi.index'],
-            ['key' => 'admin.produk',      'label' => 'Manajemen Produk',   'icon' => 'package',  'route' => 'admin.produk.index'],
+            ['key' => 'admin.toko',        'label' => 'Manajemen Toko',     'icon' => 'package',  'route' => 'admin.toko.index'],
             ['key' => 'admin.kategori',    'label' => 'Manajemen Kategori', 'icon' => 'category', 'route' => 'admin.kategori.index'],
             ['key' => 'admin.hero',        'label' => 'Hero Banner',        'icon' => 'image',    'route' => 'admin.hero.index'],
         ],

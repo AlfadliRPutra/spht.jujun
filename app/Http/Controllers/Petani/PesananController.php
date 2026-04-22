@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Petani;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -47,5 +48,68 @@ class PesananController extends Controller
             'sortOptions' => $sortOptions,
             'perPage'     => $perPage,
         ]);
+    }
+
+    public function ship(Request $request, Order $order): RedirectResponse
+    {
+        $this->authorizeOrder($order, $request->user()->id);
+
+        if ($order->status !== OrderStatus::Dibayar) {
+            return back()->with('error', 'Pesanan hanya bisa dikirim setelah dibayar.');
+        }
+
+        $order->update(['status' => OrderStatus::Dikirim]);
+
+        return back()->with('success', 'Pesanan #'.$order->id.' ditandai sudah dikirim.');
+    }
+
+    public function complete(Request $request, Order $order): RedirectResponse
+    {
+        $this->authorizeOrder($order, $request->user()->id);
+
+        if ($order->status !== OrderStatus::Dikirim) {
+            return back()->with('error', 'Pesanan hanya bisa diselesaikan setelah dikirim.');
+        }
+
+        $petaniId = $request->user()->id;
+
+        $order->loadMissing('items.product');
+        foreach ($order->items as $item) {
+            if ($item->product?->user_id === $petaniId) {
+                $item->product->increment('sold_count', $item->jumlah);
+            }
+        }
+
+        $order->update(['status' => OrderStatus::Selesai]);
+
+        return back()->with('success', 'Pesanan #'.$order->id.' diselesaikan.');
+    }
+
+    public function cancel(Request $request, Order $order): RedirectResponse
+    {
+        $this->authorizeOrder($order, $request->user()->id);
+
+        if (in_array($order->status, [OrderStatus::Selesai, OrderStatus::Batal], true)) {
+            return back()->with('error', 'Pesanan ini sudah final, tidak bisa dibatalkan.');
+        }
+
+        $request->validate([
+            'cancel_reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        $order->update([
+            'status' => OrderStatus::Batal,
+        ]);
+
+        return back()->with('success', 'Pesanan #'.$order->id.' dibatalkan. Alasan: '.$request->input('cancel_reason'));
+    }
+
+    private function authorizeOrder(Order $order, int $petaniId): void
+    {
+        $hasOwn = $order->items()
+            ->whereHas('product', fn ($q) => $q->where('user_id', $petaniId))
+            ->exists();
+
+        abort_unless($hasOwn, 403);
     }
 }

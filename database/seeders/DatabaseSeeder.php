@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             CategorySeeder::class,
             HeroSeeder::class,
+            OrderSeeder::class,
         ]);
     }
 }

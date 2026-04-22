@@ -21,15 +21,24 @@ class Product extends Model
         'deskripsi',
         'harga',
         'stok',
+        'sold_count',
         'gambar',
+        'is_active',
+        'deactivation_reason',
     ];
 
     protected function casts(): array
     {
         return [
-            'harga' => 'decimal:2',
-            'stok'  => 'integer',
+            'harga'     => 'decimal:2',
+            'stok'      => 'integer',
+            'is_active' => 'boolean',
         ];
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 
     public function getRouteKeyName(): string

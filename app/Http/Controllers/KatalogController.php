@@ -52,7 +52,8 @@ class KatalogController extends Controller
 
         $categoryIds = $selectedCategory?->descendantIds();
 
-        $produk = Product::with('category', 'petani')
+        $produk = Product::active()
+            ->with('category', 'petani')
             ->when($request->filled('q'), fn ($q) => $q->where('nama', 'like', '%'.$request->input('q').'%'))
             ->when($categoryIds, fn ($q, $ids) => $q->whereIn('category_id', $ids))
             ->where('stok', '>', 0)

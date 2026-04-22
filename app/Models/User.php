@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -21,7 +22,13 @@ class User extends Authenticatable
         'role',
         'no_hp',
         'alamat',
+        'nama_usaha',
+        'deskripsi_usaha',
+        'nik',
+        'ktp_image',
         'is_verified',
+        'verification_submitted_at',
+        'verification_note',
     ];
 
     protected $hidden = [
@@ -32,11 +39,39 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
-            'is_verified'       => 'boolean',
-            'role'              => UserRole::class,
+            'email_verified_at'         => 'datetime',
+            'password'                  => 'hashed',
+            'is_verified'               => 'boolean',
+            'role'                      => UserRole::class,
+            'verification_submitted_at' => 'datetime',
         ];
+    }
+
+    protected function ktpImageUrl(): Attribute
+    {
+        return Attribute::get(function () {
+            if (! $this->ktp_image) {
+                return null;
+            }
+            if (str_starts_with($this->ktp_image, 'http')) {
+                return $this->ktp_image;
+            }
+            return asset('storage/'.$this->ktp_image);
+        });
+    }
+
+    public function verificationStatus(): string
+    {
+        if ($this->is_verified) {
+            return 'verified';
+        }
+        if ($this->verification_submitted_at) {
+            return 'pending';
+        }
+        if ($this->verification_note) {
+            return 'rejected';
+        }
+        return 'not_submitted';
     }
 
     public function products(): HasMany
