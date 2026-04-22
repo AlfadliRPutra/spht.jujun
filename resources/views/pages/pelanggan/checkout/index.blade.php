@@ -53,7 +53,7 @@
                 <div class="card-body">
                     @foreach ($items as $item)
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <img src="{{ $item->product->image_url }}" alt="{{ $item->product->nama }}" class="rounded" style="width:44px;height:44px;object-fit:cover">
+                            <img src="{{ $item->product->image_url }}" alt="{{ $item->product->nama }}" class="rounded" style="width:44px;height:44px;object-fit:cover" loading="lazy" decoding="async">
                             <div class="flex-fill">
                                 <div class="small fw-semibold text-truncate">{{ $item->product->nama }}</div>
                                 <div class="text-secondary small">× {{ $item->jumlah }}</div>

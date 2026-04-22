@@ -68,7 +68,9 @@
                 @foreach ($heroSlides as $i => $slide)
                     <div class="carousel-item {{ $i === 0 ? 'active' : '' }}">
                         <div class="hero-slide">
-                            <img src="{{ $slide->image_url }}" alt="{{ $slide->title }}">
+                            <img src="{{ $slide->image_url }}" alt="{{ $slide->title }}"
+                                 @if ($i === 0) fetchpriority="high" decoding="async"
+                                 @else loading="lazy" decoding="async" @endif>
                             <div class="hero-caption">
                                 <h2>{{ $slide->title }}</h2>
                                 @if ($slide->subtitle)
@@ -142,13 +144,13 @@
         @forelse ($produk as $item)
             @php($lowStock = $item->stok <= 20)
             <div class="col">
-                <div class="product-card">
+                <div class="product-card reveal" style="animation-delay: {{ min($loop->index * 40, 400) }}ms">
                     <a href="{{ route('pelanggan.katalog.show', $item->slug) }}" class="product-media text-decoration-none">
                         <span class="product-badge">{{ $item->category?->nama }}</span>
                         @if ($lowStock)
                             <span class="product-badge danger">Stok Terbatas</span>
                         @endif
-                        <img src="{{ $item->image_url }}" alt="{{ $item->nama }}" loading="lazy">
+                        <img src="{{ $item->image_url }}" alt="{{ $item->nama }}" loading="lazy" decoding="async">
                     </a>
                     <div class="product-body">
                         <a href="{{ route('pelanggan.katalog.show', $item->slug) }}" class="product-name d-block text-decoration-none text-reset" title="{{ $item->nama }}">

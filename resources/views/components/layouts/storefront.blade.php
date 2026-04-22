@@ -11,6 +11,10 @@
 
     <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
 
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+    <link rel="dns-prefetch" href="//images.unsplash.com">
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.41.1/dist/tabler-icons.min.css">
     <style>
@@ -24,6 +28,15 @@
         .category-mega .category-group-title { color: #0b5d2b; font-weight: 700; font-size: .8rem; letter-spacing: .04em; text-transform: uppercase; }
         .category-mega .category-sub { color: #24344d; font-size: .9rem; }
         .category-mega .category-sub:hover { color: #0b5d2b; background: #f0fdf4; }
+
+        @keyframes sphtFadeInUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+        .reveal { opacity: 0; }
+        .reveal.is-visible { animation: sphtFadeInUp .5s ease forwards; }
+        @media (prefers-reduced-motion: reduce) {
+            .reveal, .reveal.is-visible { animation: none !important; opacity: 1 !important; transform: none !important; }
+        }
+
+        img[loading="lazy"] { background: #f1f3f5; }
     </style>
     @stack('styles')
 </head>
@@ -60,7 +73,32 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js" defer></script>
+    <script>
+        (function () {
+            if (!('IntersectionObserver' in window)) {
+                document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('is-visible'); });
+                return;
+            }
+            var io = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        io.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.05, rootMargin: '0px 0px -40px 0px' });
+
+            function bindReveal() {
+                document.querySelectorAll('.reveal:not(.is-visible)').forEach(function (el) { io.observe(el); });
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bindReveal);
+            } else {
+                bindReveal();
+            }
+        })();
+    </script>
     @stack('scripts')
 </body>
 </html>

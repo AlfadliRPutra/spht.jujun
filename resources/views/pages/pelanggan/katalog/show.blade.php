@@ -43,12 +43,12 @@
     <div class="row g-4">
         <div class="col-md-6">
             <div class="product-hero-img mb-3">
-                <img src="{{ $produk->image_url }}" alt="{{ $produk->nama }}">
+                <img src="{{ $produk->image_url }}" alt="{{ $produk->nama }}" fetchpriority="high" decoding="async">
             </div>
             <div class="d-flex gap-2">
                 @for ($i = 0; $i < 4; $i++)
                     <div class="thumb {{ $i === 0 ? 'active' : '' }}">
-                        <img src="{{ $produk->image_url }}" alt="thumb">
+                        <img src="{{ $produk->image_url }}" alt="thumb" loading="lazy" decoding="async">
                     </div>
                 @endfor
             </div>
@@ -137,9 +137,9 @@
                 @foreach ($terkait as $rel)
                     <div class="col-6 col-md-3">
                         <a href="{{ route('pelanggan.katalog.show', $rel->slug) }}" class="text-reset text-decoration-none">
-                            <div class="mini-card h-100">
+                            <div class="mini-card h-100 reveal" style="animation-delay: {{ $loop->index * 60 }}ms">
                                 <div class="ratio ratio-1x1">
-                                    <img src="{{ $rel->image_url }}" alt="{{ $rel->nama }}" loading="lazy">
+                                    <img src="{{ $rel->image_url }}" alt="{{ $rel->nama }}" loading="lazy" decoding="async">
                                 </div>
                                 <div class="p-2">
                                     <div class="small text-truncate">{{ $rel->nama }}</div>

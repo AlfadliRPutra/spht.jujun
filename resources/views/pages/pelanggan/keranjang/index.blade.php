@@ -27,7 +27,7 @@
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
-                                    <img src="{{ $item->product->image_url }}" alt="{{ $item->product->nama }}" class="rounded" style="width:56px;height:56px;object-fit:cover">
+                                    <img src="{{ $item->product->image_url }}" alt="{{ $item->product->nama }}" class="rounded" style="width:56px;height:56px;object-fit:cover" loading="lazy" decoding="async">
                                     <div>
                                         <div class="fw-semibold">{{ $item->product->nama }}</div>
                                         <div class="text-secondary small">{{ $item->product->category?->nama }}</div>
