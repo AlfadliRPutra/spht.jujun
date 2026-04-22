@@ -18,16 +18,38 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.41.1/dist/tabler-icons.min.css">
     <style>
-        body { background: #f6f8fa; }
-        .storefront-topbar { background: #0b5d2b; color: #fff; font-size: .85rem; }
-        .storefront-nav { background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.06); }
-        .storefront-nav .nav-link { color: #24344d; font-weight: 500; }
-        .storefront-nav .nav-link.active { color: #0b5d2b; }
+        :root {
+            --spht-green:      #15803d;
+            --spht-green-dark: #166534;
+            --spht-green-soft: #f0fdf4;
+            --spht-border:     #e7eaf0;
+            --spht-muted:      #6b7280;
+            --spht-ink:        #1f2937;
+            --spht-radius:     14px;
+            --spht-radius-sm:  10px;
+            --spht-radius-lg:  20px;
+        }
+        body { background: #f7f8fa; color: var(--spht-ink); margin: 0; padding: 0; }
+
+        .app-container { width: 100%; max-width: 1400px; margin-inline: auto; padding-inline: 8px; }
+        @media (min-width: 1200px) { .app-container { padding-inline: 16px; } }
+
+        .storefront-topbar { background: var(--spht-green-dark); color: #fff; font-size: .82rem; }
+        .storefront-nav { background: #fff; border-bottom: 1px solid var(--spht-border); }
+        .storefront-nav .nav-link { color: var(--spht-ink); font-weight: 500; }
+        .storefront-nav .nav-link.active { color: var(--spht-green); }
         .storefront-nav .search-wrap { min-width: 260px; }
-        .category-mega { min-width: 560px; padding: 1rem 1.25rem; }
-        .category-mega .category-group-title { color: #0b5d2b; font-weight: 700; font-size: .8rem; letter-spacing: .04em; text-transform: uppercase; }
-        .category-mega .category-sub { color: #24344d; font-size: .9rem; }
-        .category-mega .category-sub:hover { color: #0b5d2b; background: #f0fdf4; }
+        .storefront-nav .form-control, .storefront-nav .btn { border-radius: var(--spht-radius-sm); }
+
+        .card { border-radius: var(--spht-radius); border-color: var(--spht-border); }
+        .alert { border-radius: var(--spht-radius); }
+        .breadcrumb-item a { color: var(--spht-muted); text-decoration: none; }
+        .breadcrumb-item.active { color: var(--spht-ink); }
+
+        .category-mega { min-width: 560px; padding: 1rem 1.25rem; border-radius: var(--spht-radius); }
+        .category-mega .category-group-title { color: var(--spht-green); font-weight: 700; font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; }
+        .category-mega .category-sub { color: var(--spht-ink); font-size: .9rem; }
+        .category-mega .category-sub:hover { color: var(--spht-green); background: var(--spht-green-soft); }
 
         @keyframes sphtFadeInUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
         .reveal { opacity: 0; }
@@ -43,8 +65,8 @@
 <body class="d-flex flex-column min-vh-100">
     <x-storefront-header :active="$active" />
 
-    <main class="py-4 flex-grow-1">
-        <div class="container-xl">
+    <main class="py-2 flex-grow-1">
+        <div class="app-container">
             @if (session('success'))
                 <div class="alert alert-success alert-dismissible" role="alert">
                     {{ session('success') }}
@@ -63,7 +85,7 @@
     </main>
 
     <footer class="py-4 border-top bg-white mt-auto">
-        <div class="container-xl d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+        <div class="app-container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
             <div class="text-secondary small">&copy; {{ date('Y') }} {{ config('app.name') }}. Panen segar dari petani lokal.</div>
             <ul class="list-inline list-inline-dots mb-0 small">
                 <li class="list-inline-item"><a href="#" class="link-secondary">Tentang</a></li>

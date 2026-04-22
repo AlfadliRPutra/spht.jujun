@@ -20,37 +20,49 @@
 <x-layouts.storefront :title="$title" :active="$active">
     @push('styles')
         <style>
-            .hero-slide { position: relative; height: 360px; border-radius: .75rem; overflow: hidden; }
+            .hero-slide { position: relative; height: 360px; border-radius: var(--spht-radius-lg); overflow: hidden; }
             .hero-slide img { width: 100%; height: 100%; object-fit: cover; }
-            .hero-slide::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.1) 70%); }
+            .hero-slide::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(15,23,42,.55) 0%, rgba(15,23,42,.1) 70%); }
             .hero-caption { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 2rem 2.5rem; color: #fff; z-index: 2; max-width: 60%; }
-            .hero-caption h2 { font-weight: 700; font-size: 2rem; margin-bottom: .5rem; }
+            .hero-caption h2 { font-weight: 700; font-size: 1.85rem; margin-bottom: .4rem; }
+            .hero-caption p { font-size: .95rem; }
             @media (max-width: 576px) {
-                .hero-slide { height: 260px; }
+                .hero-slide { height: 240px; }
                 .hero-caption { padding: 1.25rem; max-width: 100%; }
-                .hero-caption h2 { font-size: 1.4rem; }
+                .hero-caption h2 { font-size: 1.3rem; }
             }
 
-            .filter-pills { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .5rem; }
-            .filter-pills::-webkit-scrollbar { height: 4px; }
-            .filter-pills .pill { white-space: nowrap; border-radius: 999px; padding: .35rem .9rem; font-size: .875rem; border: 1px solid #dee2e6; background: #fff; color: #24344d; text-decoration: none; }
-            .filter-pills .pill.active { background: #0b5d2b; color: #fff; border-color: #0b5d2b; }
-            .filter-pills .pill:not(.active):hover { background: #f0fdf4; border-color: #0b5d2b; color: #0b5d2b; }
+            .filter-panel { background: #fff; border: 1px solid var(--spht-border); border-radius: var(--spht-radius); padding: 1rem 1.25rem; }
+            .filter-group + .filter-group { margin-top: .85rem; }
+            .filter-group-label { font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; color: var(--spht-muted); font-weight: 600; margin-bottom: .5rem; }
 
-            .product-card { border: 1px solid #eef0f3; border-radius: .75rem; overflow: hidden; background: #fff; transition: transform .15s ease, box-shadow .15s ease; height: 100%; display: flex; flex-direction: column; }
-            .product-card:hover { transform: translateY(-3px); box-shadow: 0 .75rem 1.5rem rgba(0,0,0,.06); }
-            .product-media { aspect-ratio: 1/1; background: #f6f8fa; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-            .product-media img { width: 100%; height: 100%; object-fit: contain; padding: .75rem; transition: transform .3s ease; }
+            .filter-pills { display: flex; gap: .4rem; overflow-x: auto; padding-bottom: .25rem; scrollbar-width: thin; }
+            .filter-pills::-webkit-scrollbar { height: 4px; }
+            .filter-pills .pill { white-space: nowrap; border-radius: 999px; padding: .38rem .9rem; font-size: .85rem; border: 1px solid var(--spht-border); background: #fff; color: var(--spht-ink); text-decoration: none; transition: background-color .15s ease, color .15s ease, border-color .15s ease; display: inline-flex; align-items: center; gap: .3rem; }
+            .filter-pills .pill.active { background: var(--spht-green); color: #fff; border-color: var(--spht-green); }
+            .filter-pills .pill:not(.active):hover { background: var(--spht-green-soft); border-color: var(--spht-green); color: var(--spht-green); }
+            .filter-pills.sub .pill { font-size: .8rem; padding: .3rem .75rem; }
+
+            .toolbar-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem; margin: 1.25rem 0 1rem; }
+
+            .product-card { border: 1px solid var(--spht-border); border-radius: var(--spht-radius); overflow: hidden; background: #fff; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; height: 100%; display: flex; flex-direction: column; }
+            .product-card:hover { transform: translateY(-2px); box-shadow: 0 .6rem 1.25rem rgba(17,24,39,.06); border-color: #d5dbe3; }
+            .product-media { position: relative; height: 220px; background: #f7f8fa; overflow: hidden; }
+            .product-media img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s ease; }
             .product-card:hover .product-media img { transform: scale(1.04); }
-            .product-badge { position: absolute; top: .5rem; left: .5rem; background: #0b5d2b; color: #fff; font-size: .7rem; padding: .15rem .5rem; border-radius: 999px; z-index: 2; }
-            .product-badge.danger { background: #d63939; left: auto; right: .5rem; }
-            .product-body { padding: .85rem 1rem .5rem; flex: 1 1 auto; }
-            .product-name { font-weight: 600; color: #1f2d3d; margin-bottom: .15rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }
-            .product-seller { font-size: .75rem; color: #6b7a90; margin-bottom: .35rem; }
-            .product-price { color: #0b5d2b; font-weight: 700; font-size: 1.1rem; }
-            .product-meta { font-size: .75rem; color: #6b7a90; margin-top: .15rem; }
+            .product-badge { position: absolute; top: .6rem; left: .6rem; background: #fff; color: var(--spht-ink); font-size: .7rem; padding: .2rem .55rem; border-radius: 999px; z-index: 2; border: 1px solid var(--spht-border); font-weight: 500; }
+            .product-badge.danger { background: #fff7ed; color: #c2410c; border-color: #fed7aa; left: auto; right: .6rem; }
+            .product-body { padding: .85rem 1rem .4rem; flex: 1 1 auto; }
+            .product-name { font-weight: 600; color: var(--spht-ink); font-size: .95rem; margin-bottom: .2rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; line-height: 1.3; }
+            .product-seller { font-size: .75rem; color: var(--spht-muted); margin-bottom: .35rem; }
+            .product-price { color: var(--spht-green-dark); font-weight: 700; font-size: 1.05rem; }
+            .product-meta { font-size: .72rem; color: var(--spht-muted); margin-top: .15rem; }
             .product-footer { padding: 0 1rem 1rem; display: flex; gap: .5rem; }
             .product-footer .btn { flex: 1; }
+
+            @media (max-width: 576px) {
+                .product-media { height: 160px; }
+            }
         </style>
     @endpush
 
@@ -95,35 +107,43 @@
         </div>
     @endif
 
-    <div class="filter-pills mb-2">
-        <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => null])) }}"
-           class="pill {{ ! $selectedCategory ? 'active' : '' }}">Semua</a>
-        @foreach ($rootCategories as $root)
-            <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => $root->slug])) }}"
-               class="pill {{ $activeRootSlug === $root->slug ? 'active' : '' }}">
-                @if ($root->icon)<i class="ti ti-{{ $root->icon }} me-1"></i>@endif
-                {{ $root->nama }}
-            </a>
-        @endforeach
+    <div class="filter-panel">
+        <div class="filter-group">
+            <div class="filter-group-label">Kategori</div>
+            <div class="filter-pills">
+                <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => null])) }}"
+                   class="pill {{ ! $selectedCategory ? 'active' : '' }}">Semua</a>
+                @foreach ($rootCategories as $root)
+                    <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => $root->slug])) }}"
+                       class="pill {{ $activeRootSlug === $root->slug ? 'active' : '' }}">
+                        @if ($root->icon)<i class="ti ti-{{ $root->icon }}"></i>@endif
+                        {{ $root->nama }}
+                    </a>
+                @endforeach
+            </div>
+        </div>
+
+        @if ($subCategories->isNotEmpty())
+            <div class="filter-group">
+                <div class="filter-group-label">Sub Kategori</div>
+                <div class="filter-pills sub">
+                    @foreach ($subCategories as $sub)
+                        <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => $sub->slug])) }}"
+                           class="pill {{ $selectedCategory?->id === $sub->id ? 'active' : '' }}">
+                            {{ $sub->nama }}
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
     </div>
 
-    @if ($subCategories->isNotEmpty())
-        <div class="filter-pills mb-3">
-            @foreach ($subCategories as $sub)
-                <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => $sub->slug])) }}"
-                   class="pill {{ $selectedCategory?->id === $sub->id ? 'active' : '' }}">
-                    {{ $sub->nama }}
-                </a>
-            @endforeach
-        </div>
-    @endif
-
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <div class="text-secondary">
+    <div class="toolbar-row">
+        <div class="text-secondary small">
             @if ($selectedCategory)
-                Kategori <strong>{{ $selectedCategory->nama }}</strong> &middot;
+                Kategori <strong class="text-dark">{{ $selectedCategory->nama }}</strong> &middot;
             @endif
-            Menampilkan <strong>{{ $produk->count() }}</strong> produk
+            Menampilkan <strong class="text-dark">{{ $produk->count() }}</strong> produk
         </div>
         <form method="GET" class="d-flex align-items-center gap-2">
             @foreach ($queryBase as $k => $v)
@@ -131,7 +151,7 @@
                     <input type="hidden" name="{{ $k }}" value="{{ $v }}">
                 @endif
             @endforeach
-            <label class="text-secondary small mb-0">Urutkan:</label>
+            <label class="text-secondary small mb-0">Urutkan</label>
             <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width:180px">
                 @foreach ($sortOptions as $key => [$_, $__, $label])
                     <option value="{{ $key }}" @selected($sort === $key)>{{ $label }}</option>
