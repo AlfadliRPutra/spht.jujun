@@ -24,9 +24,11 @@
             ['key' => 'admin.verifikasi',  'label' => 'Verifikasi Petani', 'icon' => 'shield',   'route' => 'admin.verifikasi.index'],
             ['key' => 'admin.produk',      'label' => 'Produk',            'icon' => 'package',  'route' => 'admin.produk.index'],
             ['key' => 'admin.kategori',    'label' => 'Kategori',          'icon' => 'category', 'route' => 'admin.kategori.index'],
+            ['key' => 'admin.hero',        'label' => 'Hero Banner',       'icon' => 'image',    'route' => 'admin.hero.index'],
         ],
         default => [
-            ['key' => 'dashboard', 'label' => 'Beranda', 'icon' => 'home', 'route' => 'dashboard'],
+            ['key' => 'pelanggan.katalog', 'label' => 'Katalog', 'icon' => 'package', 'route' => 'pelanggan.katalog.index'],
+            ['key' => 'login',             'label' => 'Masuk',   'icon' => 'shield',  'route' => 'login'],
         ],
     };
 
@@ -38,6 +40,7 @@
         'cart'      => '<path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17h-11v-14h-2"/><path d="M6 5l14 1l-1 7h-13"/>',
         'shield'    => '<path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3"/><path d="M9 12l2 2l4 -4"/>',
         'category'  => '<path d="M4 4h6v6h-6z"/><path d="M14 4h6v6h-6z"/><path d="M4 14h6v6h-6z"/><path d="M17 17m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/>',
+        'image'     => '<path d="M15 8h.01"/><path d="M4 4m0 3a3 3 0 0 1 3 -3h10a3 3 0 0 1 3 3v10a3 3 0 0 1 -3 3h-10a3 3 0 0 1 -3 -3z"/><path d="M4 15l4 -4a3 5 0 0 1 3 0l5 5"/><path d="M14 14l1 -1a3 5 0 0 1 3 0l2 2"/>',
         'settings'  => '<path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>',
     ];
 @endphp

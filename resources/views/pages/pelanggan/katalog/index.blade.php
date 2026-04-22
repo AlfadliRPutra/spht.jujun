@@ -1,122 +1,179 @@
 @php
-    $title    = 'Katalog Produk';
-    $active   = 'pelanggan.katalog';
-    $kategori = \App\Models\Category::withCount('products')->orderBy('nama')->get();
+    /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $produk */
+    /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Category> $rootCategories */
+    /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Category> $subCategories */
+    /** @var \App\Models\Category|null $selectedCategory */
+    /** @var string|null $activeRootSlug */
+    /** @var string $sort */
+    /** @var array $sortOptions */
+    /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\HeroSlide> $heroSlides */
+    $title  = 'Katalog Produk';
+    $active = 'pelanggan.katalog';
 
-    $sort    = request('sort', 'latest');
-    $sortMap = [
-        'latest'     => ['created_at', 'desc'],
-        'termurah'   => ['harga', 'asc'],
-        'termahal'   => ['harga', 'desc'],
-        'az'         => ['nama', 'asc'],
-    ];
-    [$sortCol, $sortDir] = $sortMap[$sort] ?? $sortMap['latest'];
-
-    $produk = \App\Models\Product::with('category', 'petani')
-        ->when(request('q'),        fn ($q, $v) => $q->where('nama', 'like', "%{$v}%"))
-        ->when(request('category'), fn ($q, $v) => $q->where('category_id', $v))
-        ->where('stok', '>', 0)
-        ->orderBy($sortCol, $sortDir)
-        ->get();
+    $queryBase = array_filter([
+        'q'        => request('q'),
+        'category' => request('category'),
+        'sort'     => request('sort'),
+    ], fn ($v) => $v !== null && $v !== '');
 @endphp
 
-<x-layouts.app :title="$title" :active="$active">
+<x-layouts.storefront :title="$title" :active="$active">
     @push('styles')
         <style>
-            .hero-catalog {
-                background: linear-gradient(135deg, #2fb344 0%, #206bc4 100%);
-                color: #fff; border-radius: .75rem; padding: 2rem 1.5rem;
+            .hero-slide { position: relative; height: 360px; border-radius: .75rem; overflow: hidden; }
+            .hero-slide img { width: 100%; height: 100%; object-fit: cover; }
+            .hero-slide::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.1) 70%); }
+            .hero-caption { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 2rem 2.5rem; color: #fff; z-index: 2; max-width: 60%; }
+            .hero-caption h2 { font-weight: 700; font-size: 2rem; margin-bottom: .5rem; }
+            @media (max-width: 576px) {
+                .hero-slide { height: 260px; }
+                .hero-caption { padding: 1.25rem; max-width: 100%; }
+                .hero-caption h2 { font-size: 1.4rem; }
             }
-            .hero-catalog .form-control, .hero-catalog .form-select {
-                border: 0; background: rgba(255,255,255,.95);
-            }
-            .product-card { transition: transform .15s ease, box-shadow .15s ease; }
-            .product-card:hover { transform: translateY(-4px); box-shadow: 0 .75rem 1.5rem rgba(0,0,0,.08); }
-            .product-img-wrap { overflow: hidden; border-top-left-radius: calc(var(--tblr-border-radius) - 1px); border-top-right-radius: calc(var(--tblr-border-radius) - 1px); }
-            .product-img-wrap img { transition: transform .35s ease; }
-            .product-card:hover .product-img-wrap img { transform: scale(1.06); }
-            .category-pill { white-space: nowrap; }
-            .stock-bar { height: 4px; border-radius: 2px; background: #e9ecef; overflow: hidden; }
-            .stock-bar > span { display:block; height:100%; background:#2fb344; }
+
+            .filter-pills { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .5rem; }
+            .filter-pills::-webkit-scrollbar { height: 4px; }
+            .filter-pills .pill { white-space: nowrap; border-radius: 999px; padding: .35rem .9rem; font-size: .875rem; border: 1px solid #dee2e6; background: #fff; color: #24344d; text-decoration: none; }
+            .filter-pills .pill.active { background: #0b5d2b; color: #fff; border-color: #0b5d2b; }
+            .filter-pills .pill:not(.active):hover { background: #f0fdf4; border-color: #0b5d2b; color: #0b5d2b; }
+
+            .product-card { border: 1px solid #eef0f3; border-radius: .75rem; overflow: hidden; background: #fff; transition: transform .15s ease, box-shadow .15s ease; height: 100%; display: flex; flex-direction: column; }
+            .product-card:hover { transform: translateY(-3px); box-shadow: 0 .75rem 1.5rem rgba(0,0,0,.06); }
+            .product-media { aspect-ratio: 1/1; background: #f6f8fa; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+            .product-media img { width: 100%; height: 100%; object-fit: contain; padding: .75rem; transition: transform .3s ease; }
+            .product-card:hover .product-media img { transform: scale(1.04); }
+            .product-badge { position: absolute; top: .5rem; left: .5rem; background: #0b5d2b; color: #fff; font-size: .7rem; padding: .15rem .5rem; border-radius: 999px; z-index: 2; }
+            .product-badge.danger { background: #d63939; left: auto; right: .5rem; }
+            .product-body { padding: .85rem 1rem .5rem; flex: 1 1 auto; }
+            .product-name { font-weight: 600; color: #1f2d3d; margin-bottom: .15rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }
+            .product-seller { font-size: .75rem; color: #6b7a90; margin-bottom: .35rem; }
+            .product-price { color: #0b5d2b; font-weight: 700; font-size: 1.1rem; }
+            .product-meta { font-size: .75rem; color: #6b7a90; margin-top: .15rem; }
+            .product-footer { padding: 0 1rem 1rem; display: flex; gap: .5rem; }
+            .product-footer .btn { flex: 1; }
         </style>
     @endpush
 
-    <div class="hero-catalog mb-3">
-        <div class="row align-items-center g-3">
-            <div class="col-md-5">
-                <div class="h2 mb-1">Produk Pertanian Segar</div>
-                <div class="opacity-75">Langsung dari petani lokal, untuk keluargamu.</div>
-            </div>
-            <div class="col-md-7">
-                <form class="row g-2">
-                    <div class="col-8">
-                        <input type="text" name="q" class="form-control form-control-lg" placeholder="Cari produk..." value="{{ request('q') }}">
+    @if ($heroSlides->isNotEmpty())
+        <div id="heroCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
+            @if ($heroSlides->count() > 1)
+                <div class="carousel-indicators">
+                    @foreach ($heroSlides as $i => $slide)
+                        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="{{ $i }}"
+                            class="{{ $i === 0 ? 'active' : '' }}" aria-label="Slide {{ $i + 1 }}"></button>
+                    @endforeach
+                </div>
+            @endif
+            <div class="carousel-inner">
+                @foreach ($heroSlides as $i => $slide)
+                    <div class="carousel-item {{ $i === 0 ? 'active' : '' }}">
+                        <div class="hero-slide">
+                            <img src="{{ $slide->image_url }}" alt="{{ $slide->title }}">
+                            <div class="hero-caption">
+                                <h2>{{ $slide->title }}</h2>
+                                @if ($slide->subtitle)
+                                    <p class="mb-3 opacity-75">{{ $slide->subtitle }}</p>
+                                @endif
+                                @if ($slide->cta_label && $slide->cta_url)
+                                    <div><a href="{{ $slide->cta_url }}" class="btn btn-success">{{ $slide->cta_label }}</a></div>
+                                @endif
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-4">
-                        <button class="btn btn-dark btn-lg w-100">Cari</button>
-                    </div>
-                    <input type="hidden" name="category" value="{{ request('category') }}">
-                    <input type="hidden" name="sort"     value="{{ request('sort') }}">
-                </form>
+                @endforeach
             </div>
+            @if ($heroSlides->count() > 1)
+                <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                </button>
+            @endif
         </div>
-    </div>
+    @endif
 
-    <div class="d-flex gap-2 overflow-auto pb-2 mb-3">
-        <a href="{{ route('pelanggan.katalog.index', ['q' => request('q'), 'sort' => request('sort')]) }}"
-           class="btn btn-sm category-pill {{ request('category') ? 'btn-outline-primary' : 'btn-primary' }}">
-            Semua
-        </a>
-        @foreach ($kategori as $k)
-            <a href="{{ route('pelanggan.katalog.index', ['q' => request('q'), 'sort' => request('sort'), 'category' => $k->id]) }}"
-               class="btn btn-sm category-pill {{ request('category') == $k->id ? 'btn-primary' : 'btn-outline-primary' }}">
-                {{ $k->nama }} <span class="badge bg-secondary-lt ms-1">{{ $k->products_count }}</span>
+    <div class="filter-pills mb-2">
+        <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => null])) }}"
+           class="pill {{ ! $selectedCategory ? 'active' : '' }}">Semua</a>
+        @foreach ($rootCategories as $root)
+            <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => $root->slug])) }}"
+               class="pill {{ $activeRootSlug === $root->slug ? 'active' : '' }}">
+                @if ($root->icon)<i class="ti ti-{{ $root->icon }} me-1"></i>@endif
+                {{ $root->nama }}
             </a>
         @endforeach
     </div>
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="text-secondary">Menampilkan <strong>{{ $produk->count() }}</strong> produk</div>
+    @if ($subCategories->isNotEmpty())
+        <div class="filter-pills mb-3">
+            @foreach ($subCategories as $sub)
+                <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => $sub->slug])) }}"
+                   class="pill {{ $selectedCategory?->id === $sub->id ? 'active' : '' }}">
+                    {{ $sub->nama }}
+                </a>
+            @endforeach
+        </div>
+    @endif
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="text-secondary">
+            @if ($selectedCategory)
+                Kategori <strong>{{ $selectedCategory->nama }}</strong> &middot;
+            @endif
+            Menampilkan <strong>{{ $produk->count() }}</strong> produk
+        </div>
         <form method="GET" class="d-flex align-items-center gap-2">
-            <input type="hidden" name="q"        value="{{ request('q') }}">
-            <input type="hidden" name="category" value="{{ request('category') }}">
+            @foreach ($queryBase as $k => $v)
+                @if ($k !== 'sort')
+                    <input type="hidden" name="{{ $k }}" value="{{ $v }}">
+                @endif
+            @endforeach
             <label class="text-secondary small mb-0">Urutkan:</label>
-            <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width:160px">
-                <option value="latest"   @selected($sort === 'latest')>Terbaru</option>
-                <option value="termurah" @selected($sort === 'termurah')>Harga: Termurah</option>
-                <option value="termahal" @selected($sort === 'termahal')>Harga: Termahal</option>
-                <option value="az"       @selected($sort === 'az')>Nama: A-Z</option>
+            <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width:180px">
+                @foreach ($sortOptions as $key => [$_, $__, $label])
+                    <option value="{{ $key }}" @selected($sort === $key)>{{ $label }}</option>
+                @endforeach
             </select>
         </form>
     </div>
 
-    <div class="row row-cards">
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
         @forelse ($produk as $item)
             @php($lowStock = $item->stok <= 20)
-            <div class="col-sm-6 col-lg-4 col-xl-3">
-                <div class="card h-100 product-card">
-                    <div class="product-img-wrap ratio ratio-4x3 bg-light position-relative">
-                        <img src="{{ $item->image_url }}" alt="{{ $item->nama }}" class="object-cover" loading="lazy">
-                        <span class="badge bg-primary position-absolute m-2 top-0 start-0">{{ $item->category?->nama }}</span>
+            <div class="col">
+                <div class="product-card">
+                    <a href="{{ route('pelanggan.katalog.show', $item->slug) }}" class="product-media text-decoration-none">
+                        <span class="product-badge">{{ $item->category?->nama }}</span>
                         @if ($lowStock)
-                            <span class="badge bg-red position-absolute m-2 top-0 end-0">Stok Terbatas</span>
+                            <span class="product-badge danger">Stok Terbatas</span>
                         @endif
+                        <img src="{{ $item->image_url }}" alt="{{ $item->nama }}" loading="lazy">
+                    </a>
+                    <div class="product-body">
+                        <a href="{{ route('pelanggan.katalog.show', $item->slug) }}" class="product-name d-block text-decoration-none text-reset" title="{{ $item->nama }}">
+                            {{ $item->nama }}
+                        </a>
+                        <div class="product-seller"><i class="ti ti-user me-1"></i>{{ $item->petani?->name }}</div>
+                        <div class="product-price">Rp {{ number_format($item->harga, 0, ',', '.') }}</div>
+                        <div class="product-meta">Stok {{ $item->stok }} &middot; Terjual {{ $item->sold_count }}</div>
                     </div>
-                    <div class="card-body">
-                        <h3 class="card-title mb-1 text-truncate" title="{{ $item->nama }}">{{ $item->nama }}</h3>
-                        <div class="text-secondary small mb-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/></svg>
-                            {{ $item->petani?->name }}
-                        </div>
-                        <div class="h3 text-primary mb-2">Rp {{ number_format($item->harga, 0, ',', '.') }}</div>
-                        <div class="stock-bar mb-1"><span style="width: {{ min(100, $item->stok) }}%"></span></div>
-                        <div class="small text-secondary">Stok: {{ $item->stok }}</div>
-                    </div>
-                    <div class="card-footer bg-transparent pt-0 border-0 d-flex gap-2">
-                        <a href="{{ route('pelanggan.katalog.show') }}" class="btn btn-outline-primary flex-fill">Detail</a>
-                        <button class="btn btn-primary flex-fill" title="Masukkan keranjang">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17h-11v-14h-2"/><path d="M6 5l14 1l-1 7h-13"/></svg>
-                        </button>
+                    <div class="product-footer">
+                        <a href="{{ route('pelanggan.katalog.show', $item->slug) }}" class="btn btn-outline-success btn-sm">Detail</a>
+                        @auth
+                            <form method="POST" action="{{ route('pelanggan.keranjang.store') }}" class="flex-fill m-0">
+                                @csrf
+                                <input type="hidden" name="product_id" value="{{ $item->id }}">
+                                <input type="hidden" name="jumlah" value="1">
+                                <button type="submit" class="btn btn-success btn-sm w-100" title="Masukkan keranjang">
+                                    <i class="ti ti-shopping-cart-plus"></i>
+                                </button>
+                            </form>
+                        @else
+                            <a href="{{ route('login') }}" class="btn btn-success btn-sm" title="Masuk untuk belanja">
+                                <i class="ti ti-shopping-cart-plus"></i>
+                            </a>
+                        @endauth
                     </div>
                 </div>
             </div>
@@ -126,10 +183,10 @@
                     <p class="empty-title">Produk tidak ditemukan</p>
                     <p class="empty-subtitle text-secondary">Coba ubah kata kunci atau pilih kategori lain.</p>
                     <div class="empty-action">
-                        <a href="{{ route('pelanggan.katalog.index') }}" class="btn btn-primary">Reset Pencarian</a>
+                        <a href="{{ route('pelanggan.katalog.index') }}" class="btn btn-success">Reset Pencarian</a>
                     </div>
                 </div>
             </div>
         @endforelse
     </div>
-</x-layouts.app>
+</x-layouts.storefront>

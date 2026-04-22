@@ -11,7 +11,7 @@
     ];
 @endphp
 
-<x-layouts.app :title="$title" :active="$active">
+<x-layouts.storefront :title="$title" :active="$active">
     <form action="{{ route('pelanggan.pembayaran.index') }}" method="GET" class="row row-cards">
         <div class="col-md-7">
             <div class="card mb-3">
@@ -73,4 +73,4 @@
             </div>
         </div>
     </form>
-</x-layouts.app>
+</x-layouts.storefront>

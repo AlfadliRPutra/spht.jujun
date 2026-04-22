@@ -113,7 +113,7 @@
                     <div class="h4 text-primary mb-0">Rp {{ number_format($item->harga, 0, ',', '.') }}</div>
                 </div>
                 <div class="card-footer pt-0 border-0 bg-transparent">
-                    <a href="{{ route('pelanggan.katalog.show') }}" class="btn btn-outline-primary w-100 btn-sm">Lihat Detail</a>
+                    <a href="{{ route('pelanggan.katalog.show', $item->slug) }}" class="btn btn-outline-primary w-100 btn-sm">Lihat Detail</a>
                 </div>
             </div>
         </div>

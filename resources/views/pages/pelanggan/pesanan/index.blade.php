@@ -4,7 +4,7 @@
     $pesanan = auth()->user()->orders()->latest()->get();
 @endphp
 
-<x-layouts.app :title="$title" :active="$active">
+<x-layouts.storefront :title="$title" :active="$active">
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Riwayat Pesanan</h3>
@@ -38,4 +38,4 @@
             </table>
         </div>
     </div>
-</x-layouts.app>
+</x-layouts.storefront>

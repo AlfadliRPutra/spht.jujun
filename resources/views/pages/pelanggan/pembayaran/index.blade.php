@@ -1,7 +1,7 @@
 @php($title = 'Pembayaran')
 @php($active = 'pelanggan.pesanan')
 
-<x-layouts.app :title="$title" :active="$active">
+<x-layouts.storefront :title="$title" :active="$active">
     <div class="row justify-content-center">
         <div class="col-md-7">
             <div class="card">
@@ -35,4 +35,4 @@
             </div>
         </div>
     </div>
-</x-layouts.app>
+</x-layouts.storefront>

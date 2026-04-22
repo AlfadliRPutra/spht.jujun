@@ -12,7 +12,9 @@ class CategoryFactory extends Factory
     public function definition(): array
     {
         return [
-            'nama' => fake()->unique()->words(2, true),
+            'parent_id'  => null,
+            'nama'       => fake()->unique()->words(2, true),
+            'sort_order' => 0,
         ];
     }
 }

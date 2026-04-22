@@ -9,17 +9,29 @@ class CategorySeeder extends Seeder
 {
     public function run(): void
     {
-        $categories = [
-            'Sayuran',
-            'Buah-buahan',
-            'Palawija',
-            'Rempah & Bumbu',
-            'Biji-bijian',
-            'Umbi-umbian',
+        $tree = [
+            ['nama' => 'Sayuran',         'icon' => 'salad',            'children' => ['Sayur Daun', 'Sayur Buah', 'Sayur Akar']],
+            ['nama' => 'Buah-buahan',     'icon' => 'apple',            'children' => ['Buah Tropis', 'Buah Lokal']],
+            ['nama' => 'Palawija',        'icon' => 'plant-2',          'children' => ['Jagung & Kacang', 'Kedelai']],
+            ['nama' => 'Rempah & Bumbu',  'icon' => 'pepper',           'children' => ['Rempah Segar', 'Bumbu Kering']],
+            ['nama' => 'Biji-bijian',     'icon' => 'wheat',            'children' => ['Beras', 'Beras Khusus']],
+            ['nama' => 'Umbi-umbian',     'icon' => 'carrot',           'children' => ['Umbi Manis', 'Umbi Pati']],
         ];
 
-        foreach ($categories as $nama) {
-            Category::create(['nama' => $nama]);
+        foreach ($tree as $sort => $parent) {
+            $root = Category::create([
+                'nama'       => $parent['nama'],
+                'icon'       => $parent['icon'],
+                'sort_order' => $sort,
+            ]);
+
+            foreach ($parent['children'] as $childSort => $childName) {
+                Category::create([
+                    'parent_id'  => $root->id,
+                    'nama'       => $childName,
+                    'sort_order' => $childSort,
+                ]);
+            }
         }
     }
 }

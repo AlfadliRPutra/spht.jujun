@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
@@ -16,6 +17,7 @@ class Product extends Model
         'user_id',
         'category_id',
         'nama',
+        'slug',
         'deskripsi',
         'harga',
         'stok',
@@ -28,6 +30,28 @@ class Product extends Model
             'harga' => 'decimal:2',
             'stok'  => 'integer',
         ];
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Product $product) {
+            if (! empty($product->slug)) {
+                return;
+            }
+
+            $base = Str::slug($product->nama) ?: 'produk';
+            $slug = $base;
+            $i = 2;
+            while (static::where('slug', $slug)->where('id', '!=', $product->id)->exists()) {
+                $slug = $base.'-'.$i++;
+            }
+            $product->slug = $slug;
+        });
     }
 
     protected function imageUrl(): Attribute
