@@ -54,6 +54,7 @@ class KatalogController extends Controller
 
         $produk = Product::active()
             ->with('category', 'petani')
+            ->whereHas('petani', fn ($q) => $q->where('is_verified', true))
             ->when($request->filled('q'), fn ($q) => $q->where('nama', 'like', '%'.$request->input('q').'%'))
             ->when($categoryIds, fn ($q, $ids) => $q->whereIn('category_id', $ids))
             ->where('stok', '>', 0)
@@ -77,9 +78,12 @@ class KatalogController extends Controller
 
     public function show(Product $produk): View
     {
+        abort_unless($produk->petani?->is_verified, 404);
+
         $produk->load('category.parent', 'petani');
 
         $terkait = Product::with('category')
+            ->whereHas('petani', fn ($q) => $q->where('is_verified', true))
             ->where('id', '!=', $produk->id)
             ->where('category_id', $produk->category_id)
             ->limit(4)

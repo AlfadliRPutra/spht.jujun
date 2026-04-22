@@ -84,6 +84,10 @@
         </div>
     </main>
 
+    @guest
+        <x-register-role-modal />
+    @endguest
+
     <footer class="py-4 border-top bg-white mt-auto">
         <div class="app-container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
             <div class="text-secondary small">&copy; {{ date('Y') }} {{ config('app.name') }}. Panen segar dari petani lokal.</div>

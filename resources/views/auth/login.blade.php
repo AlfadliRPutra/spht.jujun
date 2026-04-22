@@ -26,8 +26,8 @@
                 <div class="input-group input-group-flat">
                     <input id="password" type="password" name="password" class="form-control @error('password') is-invalid @enderror" placeholder="Kata sandi" required autocomplete="current-password">
                     <span class="input-group-text">
-                        <a href="#" class="link-secondary" data-bs-toggle="tooltip" aria-label="Tampilkan kata sandi">
-                            <i class="ti ti-eye"></i>
+                        <a href="#" class="link-secondary" data-password-toggle="#password" aria-label="Tampilkan kata sandi">
+                            <i class="ti ti-eye" data-password-icon></i>
                         </a>
                     </span>
                 </div>
@@ -48,6 +48,25 @@
     </form>
 
     <div class="text-center text-secondary mt-3">
-        Belum punya akun? <a href="{{ route('register') }}" tabindex="-1">Daftar</a>
+        Belum punya akun? <a href="#" data-bs-toggle="modal" data-bs-target="#registerRoleModal" tabindex="-1">Daftar</a>
     </div>
+
+    @push('scripts')
+        <script>
+            document.querySelectorAll('[data-password-toggle]').forEach(function (toggle) {
+                toggle.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const input = document.querySelector(toggle.getAttribute('data-password-toggle'));
+                    const icon  = toggle.querySelector('[data-password-icon]');
+                    if (!input) return;
+                    const show = input.type === 'password';
+                    input.type = show ? 'text' : 'password';
+                    if (icon) {
+                        icon.classList.toggle('ti-eye', !show);
+                        icon.classList.toggle('ti-eye-off', show);
+                    }
+                });
+            });
+        </script>
+    @endpush
 </x-layouts.guest>

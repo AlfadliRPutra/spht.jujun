@@ -40,6 +40,7 @@ Route::middleware('auth')->group(function () {
         Route::prefix('produk')->name('produk.')->group(function () {
             Route::get('/',       [PetaniProdukController::class, 'index'])->name('index');
             Route::get('/create', [PetaniProdukController::class, 'create'])->name('create');
+            Route::post('/',      [PetaniProdukController::class, 'store'])->name('store');
         });
         Route::prefix('pesanan')->name('pesanan.')->group(function () {
             Route::get('/',                     [PetaniPesananController::class, 'index'])->name('index');
@@ -50,8 +51,9 @@ Route::middleware('auth')->group(function () {
         Route::view('/laporan', 'pages.petani.laporan.index')->name('laporan.index');
 
         Route::prefix('verifikasi')->name('verifikasi.')->group(function () {
-            Route::get('/',  [PetaniVerifikasiController::class, 'index'])->name('index');
-            Route::post('/', [PetaniVerifikasiController::class, 'store'])->name('store');
+            Route::get('/',         [PetaniVerifikasiController::class, 'index'])->name('index');
+            Route::post('/',        [PetaniVerifikasiController::class, 'store'])->name('store');
+            Route::post('/dismiss', [PetaniVerifikasiController::class, 'dismiss'])->name('dismiss');
         });
     });
 

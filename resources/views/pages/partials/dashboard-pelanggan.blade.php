@@ -3,6 +3,7 @@
     use App\Models\Product;
 
     $featured = Product::with('category', 'petani')
+        ->whereHas('petani', fn ($q) => $q->where('is_verified', true))
         ->where('stok', '>', 0)
         ->latest()
         ->limit(8)

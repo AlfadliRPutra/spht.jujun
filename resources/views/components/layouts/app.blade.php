@@ -30,6 +30,10 @@
         </div>
     </div>
 
+    @guest
+        <x-register-role-modal />
+    @endguest
+
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
     @stack('scripts')
 </body>

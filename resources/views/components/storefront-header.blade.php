@@ -30,7 +30,7 @@
                 <span class="d-none d-sm-inline">Halo, <strong>{{ $user->name }}</strong></span>
             @else
                 <a href="{{ route('login') }}" class="text-white text-decoration-none">Masuk</a>
-                <a href="{{ route('register') }}" class="text-white text-decoration-none d-none d-sm-inline">Daftar</a>
+                <a href="#" class="text-white text-decoration-none d-none d-sm-inline" data-bs-toggle="modal" data-bs-target="#registerRoleModal">Daftar</a>
             @endauth
         </span>
     </div>
@@ -80,7 +80,7 @@
         <div class="d-flex align-items-center gap-2 order-lg-3 ms-auto">
             @guest
                 <a href="{{ route('login') }}" class="btn btn-outline-success btn-sm">Masuk</a>
-                <a href="{{ route('register') }}" class="btn btn-success btn-sm d-none d-sm-inline-flex">Daftar</a>
+                <a href="#" class="btn btn-success btn-sm d-none d-sm-inline-flex" data-bs-toggle="modal" data-bs-target="#registerRoleModal">Daftar</a>
             @else
                 @if ($role === UserRole::Pelanggan)
                     <a href="{{ route('pelanggan.keranjang.index') }}"

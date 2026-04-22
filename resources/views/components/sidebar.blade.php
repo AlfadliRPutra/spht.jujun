@@ -52,7 +52,7 @@
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <x-logo class="navbar-brand-autodark" />
+        <x-logo :withText="true" />
 
         <div class="collapse navbar-collapse" id="sidebar-menu">
             <ul class="navbar-nav pt-lg-3">

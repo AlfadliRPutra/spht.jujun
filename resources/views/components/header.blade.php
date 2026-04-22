@@ -71,7 +71,7 @@
             @guest
                 <div class="nav-item d-flex gap-2">
                     <a href="{{ route('login') }}" class="btn btn-outline-primary">Masuk</a>
-                    <a href="{{ route('register') }}" class="btn btn-primary d-none d-sm-inline-block">Daftar</a>
+                    <a href="#" class="btn btn-primary d-none d-sm-inline-block" data-bs-toggle="modal" data-bs-target="#registerRoleModal">Daftar</a>
                 </div>
             @else
                 <div class="nav-item dropdown">

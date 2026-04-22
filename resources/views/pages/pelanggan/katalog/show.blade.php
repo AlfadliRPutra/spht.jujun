@@ -120,7 +120,7 @@
                                 <div>Masuk dulu untuk memasukkan produk ke keranjang.</div>
                                 <div class="d-flex gap-2">
                                     <a href="{{ route('login') }}" class="btn btn-success">Masuk</a>
-                                    <a href="{{ route('register') }}" class="btn btn-outline-success">Daftar</a>
+                                    <a href="#" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#registerRoleModal">Daftar</a>
                                 </div>
                             </div>
                         </div>

@@ -18,6 +18,13 @@ class VerifikasiController extends Controller
         ]);
     }
 
+    public function dismiss(Request $request): RedirectResponse
+    {
+        $request->session()->put('verifyModalDismissed', true);
+
+        return back();
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $user = $request->user();
