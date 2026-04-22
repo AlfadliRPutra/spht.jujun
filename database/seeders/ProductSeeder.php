@@ -12,7 +12,7 @@ class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        $petani = User::where('role', UserRole::Petani)->get();
+        $petani = User::where('role', UserRole::Petani)->where('is_verified', true)->get();
         $categoryByName = Category::pluck('id', 'nama');
 
         if ($petani->isEmpty() || $categoryByName->isEmpty()) {
@@ -42,20 +42,28 @@ class ProductSeeder extends Seeder
             ['Kentang',            'Umbi Pati',       13000, 130, 240, 'Kentang granola cocok untuk segala masakan.',  'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=600&auto=format&fit=crop'],
         ];
 
+        // Produk yang akan dinonaktifkan sebagai demo moderasi admin
+        $nonaktif = ['Serai'];
+        $alasanNonaktif = 'Foto produk tidak sesuai. Mohon unggah ulang dengan pencahayaan cukup.';
+
         foreach ($samples as [$nama, $kategori, $harga, $stok, $terjual, $deskripsi, $gambar]) {
             if (! $categoryByName->has($kategori)) {
                 continue;
             }
 
+            $isActive = ! in_array($nama, $nonaktif, true);
+
             Product::create([
-                'user_id'     => $petani->random()->id,
-                'category_id' => $categoryByName[$kategori],
-                'nama'        => $nama,
-                'deskripsi'   => $deskripsi,
-                'harga'       => $harga,
-                'stok'        => $stok,
-                'sold_count'  => $terjual,
-                'gambar'      => $gambar,
+                'user_id'             => $petani->random()->id,
+                'category_id'         => $categoryByName[$kategori],
+                'nama'                => $nama,
+                'deskripsi'           => $deskripsi,
+                'harga'               => $harga,
+                'stok'                => $stok,
+                'sold_count'          => $terjual,
+                'gambar'              => $gambar,
+                'is_active'           => $isActive,
+                'deactivation_reason' => $isActive ? null : $alasanNonaktif,
             ]);
         }
     }

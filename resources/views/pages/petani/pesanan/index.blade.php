@@ -1,10 +1,24 @@
 @php
     /** @var \Illuminate\Pagination\LengthAwarePaginator $items */
+    /** @var int $petaniId */
+    use App\Enums\OrderStatus;
     $title  = 'Pesanan Masuk';
     $active = 'petani.pesanan';
 @endphp
 
 <x-layouts.app :title="$title" :active="$active">
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible" role="alert">
+            {{ session('success') }}
+            <a class="btn-close" data-bs-dismiss="alert"></a>
+        </div>
+    @endif
+    @if (session('error'))
+        <div class="alert alert-danger alert-dismissible" role="alert">
+            {{ session('error') }}
+            <a class="btn-close" data-bs-dismiss="alert"></a>
+        </div>
+    @endif
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Pesanan dari Pelanggan ({{ $items->total() }})</h3>
@@ -55,8 +69,47 @@
                             <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
                             <td class="text-end">Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
                             <td><span class="badge {{ $order->status->badgeClass() }}">{{ $order->status->label() }}</span></td>
-                            <td>
-                                <a href="#" class="btn btn-sm btn-outline-primary">Detail</a>
+                            <td class="text-nowrap">
+                                @if ($order->status === OrderStatus::Dibayar)
+                                    <form action="{{ route('petani.pesanan.ship', $order) }}" method="POST" class="d-inline"
+                                          onsubmit="return confirm('Tandai pesanan #{{ $order->id }} sebagai dikirim?');">
+                                        @csrf
+                                        <button class="btn btn-sm btn-primary"><i class="ti ti-truck-delivery me-1"></i> Kirim</button>
+                                    </form>
+                                @elseif ($order->status === OrderStatus::Dikirim)
+                                    <form action="{{ route('petani.pesanan.complete', $order) }}" method="POST" class="d-inline"
+                                          onsubmit="return confirm('Selesaikan pesanan #{{ $order->id }}?');">
+                                        @csrf
+                                        <button class="btn btn-sm btn-success"><i class="ti ti-circle-check me-1"></i> Selesai</button>
+                                    </form>
+                                @endif
+
+                                @if (! in_array($order->status, [OrderStatus::Selesai, OrderStatus::Batal], true))
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            data-bs-toggle="modal" data-bs-target="#cancel-{{ $order->id }}">
+                                        <i class="ti ti-x"></i>
+                                    </button>
+                                    <div class="modal modal-blur fade" id="cancel-{{ $order->id }}" tabindex="-1">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <form method="POST" action="{{ route('petani.pesanan.cancel', $order) }}" class="modal-content">
+                                                @csrf
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Batalkan Pesanan #{{ $order->id }}</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <label class="form-label">Alasan pembatalan (wajib)</label>
+                                                    <textarea name="cancel_reason" rows="3" class="form-control"
+                                                              placeholder="mis. Stok habis, tidak sesuai pesanan, dll." required></textarea>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-link" data-bs-dismiss="modal">Tutup</button>
+                                                    <button type="submit" class="btn btn-danger">Batalkan Pesanan</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                @endif
                             </td>
                         </tr>
                     @empty

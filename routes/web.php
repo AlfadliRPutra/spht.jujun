@@ -4,7 +4,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\KategoriController as AdminKategoriController;
 use App\Http\Controllers\Admin\PenggunaController as AdminPenggunaController;
-use App\Http\Controllers\Admin\ProdukController as AdminProdukController;
+use App\Http\Controllers\Admin\TokoController as AdminTokoController;
 use App\Http\Controllers\Admin\VerifikasiController as AdminVerifikasiController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\KatalogController;
@@ -41,7 +41,12 @@ Route::middleware('auth')->group(function () {
             Route::get('/',       [PetaniProdukController::class, 'index'])->name('index');
             Route::get('/create', [PetaniProdukController::class, 'create'])->name('create');
         });
-        Route::get('/pesanan', [PetaniPesananController::class, 'index'])->name('pesanan.index');
+        Route::prefix('pesanan')->name('pesanan.')->group(function () {
+            Route::get('/',                     [PetaniPesananController::class, 'index'])->name('index');
+            Route::post('/{order}/ship',        [PetaniPesananController::class, 'ship'])->name('ship');
+            Route::post('/{order}/complete',    [PetaniPesananController::class, 'complete'])->name('complete');
+            Route::post('/{order}/cancel',      [PetaniPesananController::class, 'cancel'])->name('cancel');
+        });
         Route::view('/laporan', 'pages.petani.laporan.index')->name('laporan.index');
 
         Route::prefix('verifikasi')->name('verifikasi.')->group(function () {
@@ -66,7 +71,11 @@ Route::middleware('auth')->group(function () {
             Route::post('/{petani}/approve',[AdminVerifikasiController::class, 'approve'])->name('approve');
             Route::post('/{petani}/reject', [AdminVerifikasiController::class, 'reject'])->name('reject');
         });
-        Route::get('/produk',            [AdminProdukController::class, 'index'])->name('produk.index');
+        Route::prefix('toko')->name('toko.')->group(function () {
+            Route::get('/',                                  [AdminTokoController::class, 'index'])->name('index');
+            Route::get('/{petani}',                          [AdminTokoController::class, 'show'])->name('show');
+            Route::patch('/{petani}/produk/{product}/toggle',[AdminTokoController::class, 'toggleProduct'])->name('product_toggle');
+        });
         Route::get('/kategori',          [AdminKategoriController::class, 'index'])->name('kategori.index');
 
         Route::prefix('hero')->name('hero.')->group(function () {

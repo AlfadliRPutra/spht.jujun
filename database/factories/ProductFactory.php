@@ -20,7 +20,9 @@ class ProductFactory extends Factory
             'deskripsi'   => fake()->sentence(12),
             'harga'       => fake()->numberBetween(5000, 150000),
             'stok'        => fake()->numberBetween(10, 200),
+            'sold_count'  => fake()->numberBetween(0, 300),
             'gambar'      => null,
+            'is_active'   => true,
         ];
     }
 }

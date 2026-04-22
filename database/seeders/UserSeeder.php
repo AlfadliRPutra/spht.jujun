@@ -11,6 +11,7 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        // Admin demo
         User::create([
             'name'        => 'Administrator',
             'email'       => 'admin@spht.test',
@@ -21,9 +22,22 @@ class UserSeeder extends Seeder
             'is_verified' => true,
         ]);
 
-        User::factory()->petani()->count(3)->create();
-        User::factory()->pelanggan()->count(5)->create();
+        // Petani demo — sudah terverifikasi lengkap
+        User::create([
+            'name'                      => 'Pak Budi (Demo)',
+            'email'                     => 'petani@spht.test',
+            'password'                  => Hash::make('password'),
+            'role'                      => UserRole::Petani,
+            'no_hp'                     => '081200000003',
+            'alamat'                    => 'Jl. Sawah Raya No. 5, Desa Sukamaju',
+            'nama_usaha'                => 'Kebun Makmur Jaya',
+            'deskripsi_usaha'           => 'Kebun sayuran organik seluas 2 hektar, fokus pada sayur daun & sayur buah. Panen setiap minggu.',
+            'nik'                       => '3201012345678901',
+            'is_verified'               => true,
+            'verification_submitted_at' => now()->subDays(30),
+        ]);
 
+        // Pelanggan demo
         User::create([
             'name'        => 'Pelanggan Demo',
             'email'       => 'pelanggan@spht.test',
@@ -34,14 +48,12 @@ class UserSeeder extends Seeder
             'is_verified' => false,
         ]);
 
-        User::create([
-            'name'        => 'Petani Demo',
-            'email'       => 'petani@spht.test',
-            'password'    => Hash::make('password'),
-            'role'        => UserRole::Petani,
-            'no_hp'       => '081200000003',
-            'alamat'      => 'Jl. Sawah Raya No. 5',
-            'is_verified' => true,
-        ]);
+        // Petani acak — 2 terverifikasi, 1 pending review, 1 ditolak
+        User::factory()->petani()->count(2)->create();
+        User::factory()->petaniPending()->create();
+        User::factory()->petaniRejected()->create();
+
+        // Pelanggan acak
+        User::factory()->pelanggan()->count(5)->create();
     }
 }
