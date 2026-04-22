@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan *)",
+      "Bash(php -r 'try { $pdo = new PDO\\('\\\\''mysql:host=127.0.0.1;port=3306'\\\\'', '\\\\''root'\\\\'', '\\\\'''\\\\''\\); echo '\\\\''MySQL OK'\\\\''; } catch\\(Exception $e\\) { echo '\\\\''ERROR: '\\\\''.$e->getMessage\\(\\); }')",
+      "Bash(php -r 'try { $pdo = new PDO\\('\\\\''mysql:host=127.0.0.1;port=3306'\\\\'', '\\\\''root'\\\\'', '\\\\'''\\\\''\\); $pdo->exec\\('\\\\''CREATE DATABASE IF NOT EXISTS spht_jujun CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'\\\\''\\); echo '\\\\''Database OK'\\\\''; } catch\\(Exception $e\\) { echo '\\\\''ERROR: '\\\\''.$e->getMessage\\(\\); }')",
+      "Bash(php -r '$pdo = new PDO\\('\\\\''mysql:host=127.0.0.1;port=3306;dbname=spht_jujun'\\\\'', '\\\\''root'\\\\'', '\\\\'''\\\\''\\); $s = $pdo->query\\('\\\\''SHOW TABLES'\\\\''\\); foreach\\($s->fetchAll\\(PDO::FETCH_COLUMN\\) as $t\\) echo $t.PHP_EOL;')",
+      "Bash(php -r '$pdo = new PDO\\('\\\\''mysql:host=127.0.0.1;port=3306;dbname=spht_jujun'\\\\'', '\\\\''root'\\\\'', '\\\\'''\\\\''\\); $s = $pdo->query\\('\\\\''SELECT * FROM migrations'\\\\''\\); foreach\\($s->fetchAll\\(PDO::FETCH_ASSOC\\) as $r\\) print_r\\($r\\);')",
+      "Bash(php -r '$pdo = new PDO\\('\\\\''mysql:host=127.0.0.1;port=3306;dbname=spht_jujun'\\\\'', '\\\\''root'\\\\'', '\\\\'''\\\\''\\); $s = $pdo->query\\('\\\\''SELECT COUNT\\(*\\) FROM users'\\\\''\\); echo '\\\\''users count: '\\\\''.$s->fetchColumn\\(\\).PHP_EOL;')"
+    ]
+  }
+}
