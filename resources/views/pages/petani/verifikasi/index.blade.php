@@ -35,7 +35,7 @@
                     <div>
                         <div class="small text-secondary">Status Verifikasi</div>
                         <div class="d-flex align-items-center gap-2 mt-1">
-                            <span class="badge bg-{{ $statusInfo['color'] }}">
+                            <span class="badge bg-{{ $statusInfo['color'] }} text-white">
                                 <i class="ti ti-{{ $statusInfo['icon'] }} me-1"></i> {{ $statusInfo['label'] }}
                             </span>
                             @if ($petani->verification_submitted_at)

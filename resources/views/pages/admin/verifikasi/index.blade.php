@@ -78,7 +78,7 @@
                                     <span class="text-secondary small">Tidak ada</span>
                                 @endif
                             </td>
-                            <td><span class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span></td>
+                            <td><span class="badge {{ $badgeClass }} text-white">{{ $badgeLabel }}</span></td>
                             <td class="small">
                                 @if ($p->verification_submitted_at)
                                     {{ $p->verification_submitted_at->format('d/m/Y H:i') }}

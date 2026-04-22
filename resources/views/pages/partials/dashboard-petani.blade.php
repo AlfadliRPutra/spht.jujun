@@ -33,7 +33,35 @@
         </div>
     </div>
 
-    @unless ($user->is_verified)
+    @if ($verificationStatus === 'rejected')
+        <div class="col-12">
+            <div class="card card-status-start border-danger">
+                <div class="card-status-start bg-danger"></div>
+                <div class="card-body">
+                    <div class="d-flex align-items-start gap-3 flex-wrap">
+                        <div class="text-danger">
+                            <i class="ti ti-circle-x" style="font-size:2rem"></i>
+                        </div>
+                        <div class="flex-fill">
+                            <div class="h3 text-danger mb-1">Pengajuan Verifikasi Ditolak</div>
+                            <div class="text-secondary mb-2">
+                                Admin menolak pengajuan verifikasi Anda. Silakan baca catatan di bawah, perbaiki data, lalu ajukan ulang agar produk Anda bisa tampil di katalog.
+                            </div>
+                            @if ($user->verification_note)
+                                <div class="alert alert-danger mb-2" role="alert">
+                                    <div class="fw-semibold mb-1"><i class="ti ti-message-circle-exclamation me-1"></i> Catatan Admin</div>
+                                    <div>{{ $user->verification_note }}</div>
+                                </div>
+                            @endif
+                            <a href="{{ route('petani.verifikasi.index') }}" class="btn btn-danger">
+                                <i class="ti ti-refresh me-1"></i> Ajukan Ulang Verifikasi
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @elseif (! $user->is_verified)
         <div class="col-12">
             <div class="alert alert-warning d-flex align-items-center mb-0" role="alert">
                 <i class="ti ti-alert-triangle me-2" style="font-size:1.25rem"></i>
@@ -42,8 +70,6 @@
                     <div class="small">
                         @if ($verificationStatus === 'pending')
                             Data verifikasi sudah dikirim dan sedang direview admin. Produk Anda belum tampil di katalog hingga verifikasi disetujui.
-                        @elseif ($verificationStatus === 'rejected')
-                            Pengajuan sebelumnya ditolak. Silakan perbaiki & ajukan ulang agar produk bisa tampil di katalog.
                         @else
                             Anda bisa menambah produk sekarang, tapi produk belum akan tampil di katalog sampai verifikasi disetujui admin.
                         @endif
@@ -54,7 +80,7 @@
                 </a>
             </div>
         </div>
-    @endunless
+    @endif
 
     <div class="col-sm-6 col-lg-3">
         <div class="card card-sm"><div class="card-body">

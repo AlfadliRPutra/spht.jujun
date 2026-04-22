@@ -24,7 +24,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h3 class="card-title">Data Petani</h3>
-                    <span class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
+                    <span class="badge {{ $badgeClass }} text-white">{{ $badgeLabel }}</span>
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">

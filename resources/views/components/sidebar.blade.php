@@ -2,8 +2,16 @@
 
 @php
     use App\Enums\UserRole;
+    use App\Models\User;
 
     $role = auth()->user()?->role;
+
+    $pendingVerif = $role === UserRole::Admin
+        ? User::where('role', UserRole::Petani)
+            ->where('is_verified', false)
+            ->whereNotNull('verification_submitted_at')
+            ->count()
+        : 0;
 
     $navItems = match ($role) {
         UserRole::Petani => [
@@ -22,7 +30,7 @@
         UserRole::Admin => [
             ['key' => 'dashboard',         'label' => 'Dashboard',         'icon' => 'home',     'route' => 'dashboard'],
             ['key' => 'admin.pengguna',    'label' => 'Manajemen Pengguna',          'icon' => 'users',    'route' => 'admin.pengguna.index'],
-            ['key' => 'admin.verifikasi',  'label' => 'Verifikasi Petani',  'icon' => 'shield',   'route' => 'admin.verifikasi.index'],
+            ['key' => 'admin.verifikasi',  'label' => 'Verifikasi Petani',  'icon' => 'shield',   'route' => 'admin.verifikasi.index', 'badge' => $pendingVerif],
             ['key' => 'admin.toko',        'label' => 'Manajemen Toko',     'icon' => 'package',  'route' => 'admin.toko.index'],
             ['key' => 'admin.kategori',    'label' => 'Manajemen Kategori', 'icon' => 'category', 'route' => 'admin.kategori.index'],
             ['key' => 'admin.hero',        'label' => 'Hero Banner',        'icon' => 'image',    'route' => 'admin.hero.index'],
@@ -58,12 +66,18 @@
             <ul class="navbar-nav pt-lg-3">
                 @foreach ($navItems as $item)
                     <li @class(['nav-item', 'active' => $active === $item['key']])>
-                        <a class="nav-link" href="{{ $item['route'] ? route($item['route']) : '#' }}">
-                            <span class="nav-link-icon d-md-none d-lg-inline-block">
+                        <a class="nav-link position-relative" href="{{ $item['route'] ? route($item['route']) : '#' }}">
+                            <span class="nav-link-icon d-md-none d-lg-inline-block position-relative">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                     {!! $icons[$item['icon']] !!}
                                 </svg>
+                                @if (! empty($item['badge']) && $item['badge'] > 0)
+                                    <span class="badge bg-red position-absolute translate-middle rounded-pill"
+                                          style="top:2px;left:100%;font-size:.6rem;padding:.15rem .35rem;min-width:1.1rem;">
+                                        {{ $item['badge'] > 99 ? '99+' : $item['badge'] }}
+                                    </span>
+                                @endif
                             </span>
                             <span class="nav-link-title">{{ $item['label'] }}</span>
                         </a>

@@ -62,7 +62,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title mb-0">Produk Terbaru</h3>
-                <a href="{{ route('admin.produk.index') }}" class="btn btn-ghost-primary btn-sm">Semua →</a>
+                <a href="{{ route('admin.toko.index') }}" class="btn btn-ghost-primary btn-sm">Semua →</a>
             </div>
             <div class="list-group list-group-flush">
                 @forelse ($latestProducts as $p)
