@@ -21,6 +21,14 @@ enum OrderStatus: string
         };
     }
 
+    public function customerLabel(): string
+    {
+        return match ($this) {
+            self::Dibayar => 'Dikemas',
+            default       => $this->label(),
+        };
+    }
+
     public function badgeClass(): string
     {
         return match ($this) {
