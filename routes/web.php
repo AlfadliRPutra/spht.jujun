@@ -81,7 +81,12 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/pengguna',          [AdminPenggunaController::class, 'index'])->name('pengguna.index');
+        Route::prefix('pengguna')->name('pengguna.')->group(function () {
+            Route::get('/',              [AdminPenggunaController::class, 'index'])->name('index');
+            Route::post('/',             [AdminPenggunaController::class, 'store'])->name('store');
+            Route::put('/{pengguna}',    [AdminPenggunaController::class, 'update'])->name('update');
+            Route::delete('/{pengguna}', [AdminPenggunaController::class, 'destroy'])->name('destroy');
+        });
         Route::prefix('verifikasi-petani')->name('verifikasi.')->group(function () {
             Route::get('/',                 [AdminVerifikasiController::class, 'index'])->name('index');
             Route::get('/{petani}',         [AdminVerifikasiController::class, 'show'])->name('show');
@@ -93,7 +98,12 @@ Route::middleware('auth')->group(function () {
             Route::get('/{petani}',                          [AdminTokoController::class, 'show'])->name('show');
             Route::patch('/{petani}/produk/{product}/toggle',[AdminTokoController::class, 'toggleProduct'])->name('product_toggle');
         });
-        Route::get('/kategori',          [AdminKategoriController::class, 'index'])->name('kategori.index');
+        Route::prefix('kategori')->name('kategori.')->group(function () {
+            Route::get('/',              [AdminKategoriController::class, 'index'])->name('index');
+            Route::post('/',             [AdminKategoriController::class, 'store'])->name('store');
+            Route::put('/{kategori}',    [AdminKategoriController::class, 'update'])->name('update');
+            Route::delete('/{kategori}', [AdminKategoriController::class, 'destroy'])->name('destroy');
+        });
 
         Route::prefix('hero')->name('hero.')->group(function () {
             Route::get('/',                  [HeroSlideController::class, 'index'])->name('index');
