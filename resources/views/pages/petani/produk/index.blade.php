@@ -158,8 +158,8 @@
                                 <div class="row g-2 mb-3">
                                     <div class="col-6">
                                         <label class="form-label required">Harga (Rp)</label>
-                                        <input type="number" name="harga" min="0" class="form-control"
-                                               value="{{ old('harga', (int) $p->harga) }}" required>
+                                        <input type="text" inputmode="numeric" name="harga" class="form-control js-rupiah"
+                                               value="{{ number_format((int) old('harga', $p->harga), 0, ',', '.') }}" required>
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label required">Stok</label>
@@ -224,4 +224,26 @@
             </div>
         </div>
     @endforeach
+
+    @push('scripts')
+        <script>
+            document.querySelectorAll('.js-rupiah').forEach(el => {
+                const fmt = v => {
+                    const n = String(v).replace(/\D/g, '');
+                    return n ? Number(n).toLocaleString('id-ID') : '';
+                };
+                el.value = fmt(el.value);
+                el.addEventListener('input', () => {
+                    const before = el.value.length;
+                    const caret  = el.selectionStart;
+                    el.value = fmt(el.value);
+                    const diff = el.value.length - before;
+                    el.setSelectionRange(caret + diff, caret + diff);
+                });
+                el.form?.addEventListener('submit', () => {
+                    el.value = el.value.replace(/\./g, '');
+                });
+            });
+        </script>
+    @endpush
 </x-layouts.app>
