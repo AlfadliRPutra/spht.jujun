@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\CheckoutSummaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,7 @@ class PembayaranController extends Controller
         }
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, CheckoutSummaryService $summary): RedirectResponse
     {
         $data = $request->validate([
             'nama_penerima'     => ['required', 'string', 'max:255'],
@@ -43,7 +44,7 @@ class PembayaranController extends Controller
         ]);
 
         $user = $request->user();
-        $cart = $user->cart()->with('items.product')->first();
+        $cart = $user->cart()->with('items.product.petani')->first();
 
         if (! $cart || $cart->items->isEmpty()) {
             return redirect()->route('pelanggan.keranjang.index')
@@ -61,24 +62,62 @@ class PembayaranController extends Controller
             }
         }
 
-        $order = DB::transaction(function () use ($cart, $user, $data) {
-            $total = $cart->items->sum(fn ($i) => $i->product->harga * $i->jumlah);
+        // Pembeli wajib sudah melengkapi alamat (province/city/district) sebelum bayar.
+        if (! $user->hasCompleteAddress()) {
+            return redirect()->route('profile.edit')
+                ->with('error', 'Lengkapi alamat pengiriman (provinsi/kota/kecamatan) sebelum melakukan pembayaran.');
+        }
 
+        // Hitung ulang ongkir per toko di server — jangan percaya nilai dari client.
+        $checkout = $summary->build($cart, $user);
+
+        if ($checkout['has_blocked_store']) {
+            return redirect()->route('pelanggan.checkout.index')
+                ->with('error', 'Beberapa toko tidak dapat melayani pengiriman ke alamat Anda. Hapus produknya dari keranjang.');
+        }
+
+        $order = DB::transaction(function () use ($cart, $user, $data, $checkout) {
             $order = Order::create([
-                'user_id'           => $user->id,
-                'total_harga'       => $total,
-                'status'            => OrderStatus::Pending,
-                'metode_pembayaran' => 'midtrans',
-                'nama_penerima'     => $data['nama_penerima'],
-                'no_hp_penerima'    => $data['no_hp_penerima'],
-                'alamat_pengiriman' => $data['alamat_pengiriman'],
+                'user_id'                => $user->id,
+                'subtotal_produk'        => $checkout['subtotal_produk'],
+                'shipping_total'         => $checkout['shipping_total'],
+                'voucher_discount'       => $checkout['voucher_discount'],
+                'total_harga'            => $checkout['grand_total'],
+                'status'                 => OrderStatus::Pending,
+                'metode_pembayaran'      => 'midtrans',
+                'nama_penerima'          => $data['nama_penerima'],
+                'no_hp_penerima'         => $data['no_hp_penerima'],
+                'alamat_pengiriman'      => $data['alamat_pengiriman'],
+                'shipping_province_id'   => $user->province_id,
+                'shipping_province_name' => $user->province_name,
+                'shipping_city_id'       => $user->city_id,
+                'shipping_city_name'     => $user->city_name,
+                'shipping_district_id'   => $user->district_id,
+                'shipping_district_name' => $user->district_name,
             ]);
 
             foreach ($cart->items as $item) {
                 $order->items()->create([
                     'product_id' => $item->product_id,
+                    'store_id'   => $item->product->user_id,
                     'jumlah'     => $item->jumlah,
+                    'weight_kg'  => $item->product->weight_kg,
                     'harga'      => $item->product->harga,
+                ]);
+            }
+
+            // Catat rincian ongkir per toko sebagai snapshot (audit & tampilan invoice).
+            foreach ($checkout['stores'] as $group) {
+                $order->shippings()->create([
+                    'store_id'         => $group['store_id'],
+                    'store_name'       => $group['store']->nama_usaha ?? $group['store']->name,
+                    'zone'             => $group['shipping']['zone'],
+                    'zone_label'       => $group['shipping']['zone_label'],
+                    'base_fee'         => $group['shipping']['base_fee'],
+                    'extra_fee_per_kg' => $group['shipping']['extra_fee_per_kg'],
+                    'base_weight_kg'   => $group['shipping']['base_weight_kg'],
+                    'total_weight_kg'  => $group['shipping']['total_weight_kg'],
+                    'shipping_cost'    => $group['shipping']['shipping_cost'],
                 ]);
             }
 
@@ -327,6 +366,32 @@ class PembayaranController extends Controller
                 'price'    => (int) round((float) $item->harga),
                 'quantity' => (int) $item->jumlah,
                 'name'     => mb_strimwidth($item->product?->nama ?? 'Produk', 0, 50, ''),
+            ];
+        }
+
+        // Tambahkan ongkir per toko sebagai item terpisah agar
+        // sum(item_details.price) === gross_amount (syarat Midtrans).
+        $order->loadMissing('shippings');
+        foreach ($order->shippings as $ship) {
+            $shipCost = (int) round((float) $ship->shipping_cost);
+            if ($shipCost <= 0) {
+                continue;
+            }
+            $items[] = [
+                'id'       => 'SHIP-'.$ship->id,
+                'price'    => $shipCost,
+                'quantity' => 1,
+                'name'     => mb_strimwidth('Ongkir '.($ship->store_name ?? 'Toko'), 0, 50, ''),
+            ];
+        }
+
+        $voucher = (int) round((float) ($order->voucher_discount ?? 0));
+        if ($voucher > 0) {
+            $items[] = [
+                'id'       => 'VOUCHER-'.$order->id,
+                'price'    => -$voucher,
+                'quantity' => 1,
+                'name'     => 'Diskon Voucher',
             ];
         }
 

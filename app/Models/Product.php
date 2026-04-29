@@ -22,6 +22,7 @@ class Product extends Model
         'deskripsi',
         'harga',
         'stok',
+        'weight_kg',
         'sold_count',
         'gambar',
         'is_active',
@@ -33,6 +34,7 @@ class Product extends Model
         return [
             'harga'     => 'decimal:2',
             'stok'      => 'integer',
+            'weight_kg' => 'decimal:3',
             'is_active' => 'boolean',
         ];
     }

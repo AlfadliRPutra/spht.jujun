@@ -1,7 +1,13 @@
+@php
+    $wilayahTree = \App\Support\Wilayah::tree();
+@endphp
 <section>
     <header>
         <h3 class="card-title">Informasi Profil</h3>
-        <p class="text-secondary small">Perbarui nama dan alamat email akun Anda.</p>
+        <p class="text-secondary small">
+            Perbarui data akun &amp; alamat. Wilayah administratif (provinsi, kota/kabupaten,
+            kecamatan) digunakan untuk simulasi perhitungan ongkos kirim.
+        </p>
     </header>
 
     <form method="POST" action="{{ route('verification.send') }}" id="send-verification">
@@ -35,7 +41,56 @@
             @endif
         </div>
 
-        <div class="d-flex align-items-center gap-2">
+        <div class="mb-3">
+            <label for="no_hp" class="form-label">No. HP</label>
+            <input id="no_hp" type="text" name="no_hp" value="{{ old('no_hp', $user->no_hp) }}" class="form-control @error('no_hp') is-invalid @enderror" autocomplete="tel">
+            @error('no_hp') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
+        <hr>
+        <h4 class="mb-2">Alamat</h4>
+        <p class="text-secondary small mb-3">
+            @if ($user->isPetani())
+                Alamat ini merupakan alamat <strong>toko</strong> Anda — pembeli akan menghitung ongkir berdasarkan lokasi ini.
+            @else
+                Alamat ini merupakan alamat <strong>pengiriman</strong> Anda — ongkir akan dihitung berdasarkan lokasi ini.
+            @endif
+        </p>
+
+        <div class="row g-2">
+            <div class="col-md-4">
+                <label for="province_id" class="form-label">Provinsi</label>
+                <select id="province_id" name="province_id" class="form-select @error('province_id') is-invalid @enderror" data-wilayah="province">
+                    <option value="">— Pilih provinsi —</option>
+                    @foreach ($wilayahTree as $prov)
+                        <option value="{{ $prov['id'] }}" @selected(old('province_id', $user->province_id) === $prov['id'])>{{ $prov['name'] }}</option>
+                    @endforeach
+                </select>
+                @error('province_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+            <div class="col-md-4">
+                <label for="city_id" class="form-label">Kota/Kabupaten</label>
+                <select id="city_id" name="city_id" class="form-select @error('city_id') is-invalid @enderror" data-wilayah="city" data-current="{{ old('city_id', $user->city_id) }}">
+                    <option value="">— Pilih kota —</option>
+                </select>
+                @error('city_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+            <div class="col-md-4">
+                <label for="district_id" class="form-label">Kecamatan</label>
+                <select id="district_id" name="district_id" class="form-select @error('district_id') is-invalid @enderror" data-wilayah="district" data-current="{{ old('district_id', $user->district_id) }}">
+                    <option value="">— Pilih kecamatan —</option>
+                </select>
+                @error('district_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <label for="alamat" class="form-label">Alamat Lengkap</label>
+            <textarea id="alamat" name="alamat" rows="3" class="form-control @error('alamat') is-invalid @enderror" placeholder="Nama jalan, no. rumah, RT/RW, patokan...">{{ old('alamat', $user->alamat) }}</textarea>
+            @error('alamat') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="d-flex align-items-center gap-2 mt-3">
             <button type="submit" class="btn btn-primary">Simpan</button>
 
             @if (session('status') === 'profile-updated')
@@ -44,3 +99,54 @@
         </div>
     </form>
 </section>
+
+@push('scripts')
+<script>
+    (function () {
+        const tree = @json($wilayahTree);
+        const provSel = document.getElementById('province_id');
+        const citySel = document.getElementById('city_id');
+        const distSel = document.getElementById('district_id');
+        if (!provSel || !citySel || !distSel) return;
+
+        const findProv = id => tree.find(p => p.id === id);
+        const findCity = (prov, id) => prov ? prov.cities.find(c => c.id === id) : null;
+
+        function renderCities(preserveCurrent) {
+            const prov = findProv(provSel.value);
+            const current = preserveCurrent ? citySel.dataset.current : '';
+            citySel.innerHTML = '<option value="">— Pilih kota —</option>';
+            if (!prov) { renderDistricts(false); return; }
+            prov.cities.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                if (c.id === current) opt.selected = true;
+                citySel.appendChild(opt);
+            });
+            renderDistricts(preserveCurrent);
+        }
+
+        function renderDistricts(preserveCurrent) {
+            const prov = findProv(provSel.value);
+            const city = findCity(prov, citySel.value);
+            const current = preserveCurrent ? distSel.dataset.current : '';
+            distSel.innerHTML = '<option value="">— Pilih kecamatan —</option>';
+            if (!city) return;
+            city.districts.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                opt.textContent = d.name;
+                if (d.id === current) opt.selected = true;
+                distSel.appendChild(opt);
+            });
+        }
+
+        provSel.addEventListener('change', () => renderCities(false));
+        citySel.addEventListener('change', () => renderDistricts(false));
+
+        // Inisialisasi awal — jaga nilai lama dari old()/database.
+        renderCities(true);
+    })();
+</script>
+@endpush

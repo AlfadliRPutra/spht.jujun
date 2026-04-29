@@ -46,6 +46,15 @@
                     <label class="form-label required">Stok</label>
                     <input type="number" name="stok" value="{{ old('stok') }}" class="form-control" min="0" required>
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label required">Berat per Unit</label>
+                    <div class="input-group">
+                        <input type="number" name="weight_kg" step="0.001" min="0.001"
+                               value="{{ old('weight_kg', '1') }}" class="form-control" required>
+                        <span class="input-group-text">kg</span>
+                    </div>
+                    <div class="form-text">Berat per unit produk dalam kilogram. Dipakai untuk perhitungan ongkos kirim.</div>
+                </div>
                 <div class="col-12">
                     <label class="form-label">Deskripsi</label>
                     <textarea name="deskripsi" rows="4" class="form-control">{{ old('deskripsi') }}</textarea>

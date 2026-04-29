@@ -166,6 +166,12 @@
                                         <input type="number" name="stok" min="0" class="form-control"
                                                value="{{ old('stok', $p->stok) }}" required>
                                     </div>
+                                    <div class="col-12">
+                                        <label class="form-label required">Berat per Unit (kg)</label>
+                                        <input type="number" step="0.001" min="0.001" name="weight_kg" class="form-control"
+                                               value="{{ old('weight_kg', $p->weight_kg) }}" required>
+                                        <div class="form-text">Dipakai untuk perhitungan ongkos kirim.</div>
+                                    </div>
                                 </div>
 
                                 <div class="mb-0">

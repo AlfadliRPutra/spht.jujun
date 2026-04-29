@@ -12,16 +12,24 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'product_id',
+        'store_id',
         'jumlah',
+        'weight_kg',
         'harga',
     ];
 
     protected function casts(): array
     {
         return [
-            'jumlah' => 'integer',
-            'harga'  => 'decimal:2',
+            'jumlah'    => 'integer',
+            'weight_kg' => 'decimal:3',
+            'harga'     => 'decimal:2',
         ];
+    }
+
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'store_id');
     }
 
     public function order(): BelongsTo

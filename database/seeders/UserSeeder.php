@@ -4,41 +4,46 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
+    /**
+     * Idempotent — aman dijalankan berulang. Menggunakan updateOrCreate
+     * sehingga TIDAK menghapus user lain (mis. pelanggan/petani yang sudah
+     * mendaftar mandiri) dan akun admin selalu ada.
+     */
     public function run(): void
     {
-        // Disable foreign key checks
-        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        User::updateOrCreate(
+            ['email' => 'admin@spht.test'],
+            [
+                'name'        => 'Administrator',
+                'password'    => Hash::make('password'),
+                'role'        => 'admin',
+                'no_hp'       => '081200000001',
+                'alamat'      => 'Kantor SPHT Jujun',
+                'is_verified' => true,
+            ],
+        );
 
-        // Hapus semua data user terlebih dahulu
-        User::truncate();
-
-        User::create([
-            'name'        => 'Administrator',
-            'email'       => 'admin@spht.test',
-            'password'    => bcrypt('password'),
-            'role'        => 'admin',
-            'no_hp'       => '081200000001',
-            'alamat'      => 'Kantor SPHT Jujun',
-            'is_verified' => true,
-        ]);
-
-        // Tambahkan user lain jika ada
-        User::create([
-            'name'        => 'Pelanggan Test',
-            'email'       => 'pelanggan@spht.test',
-            'password'    => bcrypt('password'),
-            'role'        => 'pelanggan',
-            'no_hp'       => '081200000002',
-            'alamat'      => 'Alamat Pelanggan',
-            'is_verified' => true,
-        ]);
-
-
-
-        // Re-enable foreign key checks
-        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        User::updateOrCreate(
+            ['email' => 'pelanggan@spht.test'],
+            [
+                'name'          => 'Pelanggan Test',
+                'password'      => Hash::make('password'),
+                'role'          => 'pelanggan',
+                'no_hp'         => '081200000002',
+                'alamat'        => 'Jl. Mawar No. 1',
+                // Wilayah default sebagai contoh siap-checkout untuk demo ongkir.
+                'province_id'   => '12',
+                'province_name' => 'Sumatera Utara',
+                'city_id'       => '1271',
+                'city_name'     => 'Kota Medan',
+                'district_id'   => '127101',
+                'district_name' => 'Medan Tuntungan',
+                'is_verified'   => true,
+            ],
+        );
     }
 }

@@ -66,6 +66,7 @@ class ProdukController extends Controller
             'category_id' => ['required', 'exists:categories,id'],
             'harga'       => ['required', 'numeric', 'min:0'],
             'stok'        => ['required', 'integer', 'min:0'],
+            'weight_kg'   => ['required', 'numeric', 'gt:0', 'max:9999.999'],
             'deskripsi'   => ['nullable', 'string', 'max:5000'],
             'gambar'      => ['nullable', 'image', 'max:4096'],
         ]);
@@ -92,6 +93,7 @@ class ProdukController extends Controller
             'category_id' => ['required', 'exists:categories,id'],
             'harga'       => ['required', 'numeric', 'min:0'],
             'stok'        => ['required', 'integer', 'min:0'],
+            'weight_kg'   => ['required', 'numeric', 'gt:0', 'max:9999.999'],
             'deskripsi'   => ['nullable', 'string', 'max:5000'],
             'gambar'      => ['nullable', 'image', 'max:4096'],
         ]);

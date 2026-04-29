@@ -22,6 +22,12 @@ class User extends Authenticatable
         'role',
         'no_hp',
         'alamat',
+        'province_id',
+        'province_name',
+        'city_id',
+        'city_name',
+        'district_id',
+        'district_name',
         'nama_usaha',
         'deskripsi_usaha',
         'nik',
@@ -102,5 +108,27 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
+    }
+
+    /**
+     * Snapshot alamat (wilayah administratif + full address) yang dipakai
+     * ShippingService sebagai parameter storeAddress / buyerAddress.
+     */
+    public function addressSnapshot(): array
+    {
+        return [
+            'province_id'   => $this->province_id,
+            'province_name' => $this->province_name,
+            'city_id'       => $this->city_id,
+            'city_name'     => $this->city_name,
+            'district_id'   => $this->district_id,
+            'district_name' => $this->district_name,
+            'full_address'  => $this->alamat,
+        ];
+    }
+
+    public function hasCompleteAddress(): bool
+    {
+        return ! empty($this->city_id) && ! empty($this->district_id);
     }
 }

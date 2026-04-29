@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\TokoController as AdminTokoController;
 use App\Http\Controllers\Admin\VerifikasiController as AdminVerifikasiController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\KatalogController;
+use App\Http\Controllers\Pelanggan\CheckoutController as PelangganCheckoutController;
 use App\Http\Controllers\Pelanggan\PembayaranController as PelangganPembayaranController;
 use App\Http\Controllers\Pelanggan\PesananController as PelangganPesananController;
 use App\Http\Controllers\Petani\LaporanController as PetaniLaporanController;
@@ -67,7 +68,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:pelanggan')->prefix('pelanggan')->name('pelanggan.')->group(function () {
         Route::post('/keranjang',  [CartController::class, 'store'])->name('keranjang.store');
         Route::view('/keranjang',  'pages.pelanggan.keranjang.index')->name('keranjang.index');
-        Route::view('/checkout',   'pages.pelanggan.checkout.index')->name('checkout.index');
+        Route::get('/checkout',    [PelangganCheckoutController::class, 'index'])->name('checkout.index');
 
         Route::post('/pembayaran',                    [PelangganPembayaranController::class, 'store'])->name('pembayaran.store');
         Route::get('/pembayaran',                     [PelangganPembayaranController::class, 'latest'])->name('pembayaran.latest');
