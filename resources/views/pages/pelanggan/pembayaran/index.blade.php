@@ -18,7 +18,7 @@
                         <i class="ti ti-credit-card" style="font-size:2rem"></i>
                     </div>
 
-                    <h2 class="mb-1">Bayar via Midtrans</h2>
+                    <h2 class="mb-1">Selesaikan Pembayaran</h2>
                     <p class="text-secondary mb-4">
                         Klik tombol di bawah untuk memilih metode (VA, QRIS, E-Wallet, Kartu Kredit).
                     </p>
@@ -31,7 +31,7 @@
 
                     <div class="d-grid gap-2 col-md-8 mx-auto">
                         <button id="pay-button" type="button" class="btn btn-success btn-lg" @if (! $order->snap_token) disabled @endif>
-                            <i class="ti ti-external-link me-1"></i> Lanjut ke Midtrans
+                            <i class="ti ti-external-link me-1"></i> Lanjut Bayar
                         </button>
                         <a href="{{ route('pelanggan.pesanan.index') }}" class="btn btn-link text-secondary">Lihat Daftar Pesanan</a>
                     </div>

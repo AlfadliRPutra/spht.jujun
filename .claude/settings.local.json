@@ -11,7 +11,24 @@
       "Bash(php -l app/Http/Controllers/Pelanggan/PembayaranController.php)",
       "Bash(php vendor/bin/phpunit --filter ShippingServiceTest --no-coverage)",
       "Bash(php vendor/bin/phpunit --no-coverage)",
-      "Bash(php -l resources/views/pages/admin/verifikasi/show.blade.php)"
+      "Bash(php -l resources/views/pages/admin/verifikasi/show.blade.php)",
+      "Bash(php --version)",
+      "Bash(php database/seeders/_generate_wilayah.php)",
+      "Bash(php -l database/seeders/ProvinceSeeder.php)",
+      "Bash(php -l database/seeders/RegencySeeder.php)",
+      "Bash(php -l database/seeders/DistrictSeeder.php)",
+      "Bash(php -l app/Support/Wilayah.php)",
+      "Bash(php -l app/Http/Controllers/WilayahController.php)",
+      "Bash(php -l app/Models/Province.php)",
+      "Bash(php -l app/Models/Regency.php)",
+      "Bash(php -l app/Models/District.php)",
+      "Bash(php -l app/Models/Address.php)",
+      "Bash(php -l app/Models/User.php)",
+      "Bash(php -l app/Http/Controllers/Pelanggan/AlamatController.php)",
+      "Bash(php -l app/Http/Controllers/Pelanggan/CheckoutController.php)",
+      "Bash(php -l app/Http/Middleware/EnsureProfileComplete.php)",
+      "Bash(php -l app/Services/ShippingService.php)",
+      "Bash(php -l tests/Unit/ShippingServiceTest.php)"
     ]
   }
 }

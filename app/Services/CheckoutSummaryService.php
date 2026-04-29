@@ -17,6 +17,9 @@ class CheckoutSummaryService
     public function __construct(private ShippingService $shipping) {}
 
     /**
+     * @param  array|null  $buyerAddressOverride  Snapshot alamat dari Address yang dipilih
+     *                                            di halaman checkout. Jika null, pakai default
+     *                                            user (User::addressSnapshot()).
      * @return array{
      *     stores: array<int, array<string, mixed>>,
      *     subtotal_produk: int,
@@ -27,13 +30,15 @@ class CheckoutSummaryService
      *     errors: array<int, string>,
      * }
      */
-    public function build(Cart $cart, User $buyer, int $voucherDiscount = 0): array
+    public function build(Cart $cart, User $buyer, ?array $buyerAddressOverride = null, int $voucherDiscount = 0): array
     {
-        $buyerAddress = $buyer->addressSnapshot();
+        $buyerAddress = $buyerAddressOverride ?? $buyer->addressSnapshot();
         $errors       = [];
 
+        $hasBuyerAddress = ! empty($buyerAddress['city_id']) && ! empty($buyerAddress['district_id']);
+
         // Validasi awal: alamat pembeli wajib lengkap (city_id + district_id).
-        if (! $buyer->hasCompleteAddress()) {
+        if (! $hasBuyerAddress) {
             $errors[] = 'Lengkapi alamat pengiriman (provinsi, kota, kecamatan) di profil terlebih dahulu.';
         }
 
@@ -103,7 +108,7 @@ class CheckoutSummaryService
             }
 
             // Hanya panggil ShippingService bila pembeli sudah punya alamat lengkap.
-            if ($buyer->hasCompleteAddress() && $group['total_weight_kg'] > 0) {
+            if ($hasBuyerAddress && $group['total_weight_kg'] > 0) {
                 $shippingInfo = $this->shipping->calculateShipping(
                     $store->addressSnapshot(),
                     $buyerAddress,

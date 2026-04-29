@@ -16,8 +16,8 @@ return new class extends Migration
             $table->foreignId('store_id')->constrained('users')->cascadeOnDelete();
             $table->string('store_name', 255)->nullable();
 
-            $table->string('zone', 20);              // same_district | same_city | outside_city
-            $table->string('zone_label', 50);        // Satu Kecamatan / Satu Kota / Luar Kota
+            $table->string('zone', 20);              // same_district | same_city | same_province | outside_province
+            $table->string('zone_label', 50);        // Satu Kecamatan / Satu Kabupaten/Kota / Satu Provinsi / Luar Provinsi
             $table->decimal('base_fee',         12, 2);
             $table->decimal('extra_fee_per_kg', 12, 2);
             $table->unsignedInteger('base_weight_kg');

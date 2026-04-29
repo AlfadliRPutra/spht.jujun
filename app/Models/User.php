@@ -95,6 +95,17 @@ class User extends Authenticatable
         return $this->hasMany(Order::class);
     }
 
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class)->latest('is_default')->orderBy('id');
+    }
+
+    public function defaultAddress(): ?Address
+    {
+        return $this->addresses()->where('is_default', true)->first()
+            ?? $this->addresses()->orderBy('id')->first();
+    }
+
     public function isPetani(): bool
     {
         return $this->role === UserRole::Petani;
@@ -111,11 +122,26 @@ class User extends Authenticatable
     }
 
     /**
-     * Snapshot alamat (wilayah administratif + full address) yang dipakai
-     * ShippingService sebagai parameter storeAddress / buyerAddress.
+     * Snapshot alamat untuk ShippingService.
+     *
+     * - Petani: pakai kolom wilayah di users (alamat toko, tunggal).
+     * - Pelanggan: pakai default address dari tabel addresses.
      */
     public function addressSnapshot(): array
     {
+        if ($this->isPelanggan()) {
+            $addr = $this->defaultAddress();
+            return $addr ? $addr->snapshot() : [
+                'province_id'   => null,
+                'province_name' => null,
+                'city_id'       => null,
+                'city_name'     => null,
+                'district_id'   => null,
+                'district_name' => null,
+                'full_address'  => null,
+            ];
+        }
+
         return [
             'province_id'   => $this->province_id,
             'province_name' => $this->province_name,
@@ -129,6 +155,41 @@ class User extends Authenticatable
 
     public function hasCompleteAddress(): bool
     {
+        if ($this->isPelanggan()) {
+            return $this->addresses()->exists();
+        }
         return ! empty($this->city_id) && ! empty($this->district_id);
+    }
+
+    /**
+     * Definisi profil lengkap, dipakai oleh middleware EnsureProfileComplete.
+     *
+     * - Pelanggan: nama, no_hp, dan minimal 1 alamat tersimpan.
+     * - Petani:    nama, no_hp, alamat toko lengkap (province/city/district + alamat).
+     *              Nama usaha & verifikasi KTP punya alur sendiri (petani.verifikasi),
+     *              tidak ikut dicek di sini agar tidak terjadi redirect-loop.
+     * - Admin:     selalu dianggap lengkap.
+     */
+    public function hasCompleteProfile(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if (empty($this->name) || empty($this->no_hp)) {
+            return false;
+        }
+
+        if ($this->isPelanggan()) {
+            return $this->addresses()->exists();
+        }
+
+        if ($this->isPetani()) {
+            return ! empty($this->city_id)
+                && ! empty($this->district_id)
+                && ! empty($this->alamat);
+        }
+
+        return true;
     }
 }

@@ -36,11 +36,18 @@ class ProfileUpdateRequest extends FormRequest
     }
 
     /**
-     * Lengkapi nama wilayah dari ID (single source of truth: config/wilayah.php),
-     * sehingga UI tidak bisa memalsukan pasangan ID/Name yang tidak konsisten.
+     * Lengkapi nama wilayah dari ID (single source of truth: tabel provinces /
+     * regencies / districts), sehingga UI tidak bisa memalsukan pasangan ID/Name
+     * yang tidak konsisten.
      */
     public function passedValidation(): void
     {
+        // Pelanggan: alamat dikelola di tabel `addresses` (multi-address).
+        // Jangan menyentuh kolom wilayah/alamat di `users` lewat form profil ini.
+        if ($this->user()?->isPelanggan()) {
+            return;
+        }
+
         $provinceId = $this->input('province_id') ?: null;
         $cityId     = $this->input('city_id') ?: null;
         $districtId = $this->input('district_id') ?: null;
@@ -66,6 +73,14 @@ class ProfileUpdateRequest extends FormRequest
         if ($key !== null) {
             return $data;
         }
+
+        if ($this->user()?->isPelanggan()) {
+            // Pastikan field wilayah/alamat tidak ikut menulis ke users untuk pelanggan.
+            return collect($data)
+                ->except(['province_id', 'city_id', 'district_id', 'alamat'])
+                ->all();
+        }
+
         return array_merge($data, $this->only([
             'province_name', 'city_name', 'district_name',
         ]));

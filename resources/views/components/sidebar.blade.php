@@ -14,81 +14,213 @@
             ->count()
         : 0;
 
-    $petaniItems = [
-        ['key' => 'dashboard',      'label' => 'Beranda',          'icon' => 'home',      'route' => 'dashboard'],
-        ['key' => 'petani.produk',  'label' => 'Produk Saya',      'icon' => 'package',   'route' => 'petani.produk.index'],
-        ['key' => 'petani.pesanan', 'label' => 'Pesanan Masuk',    'icon' => 'cart',      'route' => 'petani.pesanan.index'],
-        ['key' => 'petani.laporan', 'label' => 'Riwayat Transaksi','icon' => 'file-text', 'route' => 'petani.laporan.index'],
+    // Menu disusun per "section" untuk pengelompokan visual yang lebih bersih.
+    $petaniSections = [
+        ['label' => 'Utama', 'items' => [
+            ['key' => 'dashboard',       'label' => 'Beranda',     'icon' => 'home',     'route' => 'dashboard'],
+            ['key' => 'petani.produk',   'label' => 'Produk Saya', 'icon' => 'package',  'route' => 'petani.produk.index'],
+        ]],
+        ['label' => 'Penjualan', 'items' => [
+            ['key' => 'petani.pesanan', 'label' => 'Pesanan Masuk',   'icon' => 'cart',      'route' => 'petani.pesanan.index'],
+            ['key' => 'petani.laporan', 'label' => 'Riwayat Transaksi','icon' => 'file-text', 'route' => 'petani.laporan.index'],
+        ]],
     ];
     if ($role === UserRole::Petani && ! $user->is_verified) {
-        $petaniItems[] = ['key' => 'petani.verifikasi', 'label' => 'Verifikasi Akun', 'icon' => 'shield', 'route' => 'petani.verifikasi.index'];
+        $petaniSections[] = ['label' => 'Akun', 'items' => [
+            ['key' => 'petani.verifikasi', 'label' => 'Verifikasi Akun', 'icon' => 'shield', 'route' => 'petani.verifikasi.index'],
+        ]];
     }
 
-    $navItems = match ($role) {
-        UserRole::Petani => $petaniItems,
-        UserRole::Pelanggan => [
-            ['key' => 'dashboard',           'label' => 'Beranda',       'icon' => 'home',      'route' => 'dashboard'],
-            ['key' => 'pelanggan.katalog',   'label' => 'Belanja',       'icon' => 'package',   'route' => 'pelanggan.katalog.index'],
-            ['key' => 'pelanggan.keranjang', 'label' => 'Keranjang',     'icon' => 'cart',      'route' => 'pelanggan.keranjang.index'],
-            ['key' => 'pelanggan.pesanan',   'label' => 'Pesanan Saya',  'icon' => 'file-text', 'route' => 'pelanggan.pesanan.index'],
-        ],
-        UserRole::Admin => [
-            ['key' => 'dashboard',         'label' => 'Dashboard',         'icon' => 'home',     'route' => 'dashboard'],
-            ['key' => 'admin.pengguna',    'label' => 'Manajemen Pengguna',          'icon' => 'users',    'route' => 'admin.pengguna.index'],
-            ['key' => 'admin.verifikasi',  'label' => 'Verifikasi Petani',  'icon' => 'shield',   'route' => 'admin.verifikasi.index', 'badge' => $pendingVerif],
-            ['key' => 'admin.toko',        'label' => 'Manajemen Toko',     'icon' => 'package',  'route' => 'admin.toko.index'],
-            ['key' => 'admin.kategori',    'label' => 'Manajemen Kategori', 'icon' => 'category', 'route' => 'admin.kategori.index'],
-            ['key' => 'admin.hero',        'label' => 'Hero Banner',        'icon' => 'image',    'route' => 'admin.hero.index'],
-        ],
-        default => [
-            ['key' => 'pelanggan.katalog', 'label' => 'Katalog', 'icon' => 'package', 'route' => 'pelanggan.katalog.index'],
-            ['key' => 'login',             'label' => 'Masuk',   'icon' => 'shield',  'route' => 'login'],
-        ],
+    $adminSections = [
+        ['label' => 'Utama', 'items' => [
+            ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'home', 'route' => 'dashboard'],
+        ]],
+        ['label' => 'Manajemen', 'items' => [
+            ['key' => 'admin.pengguna',   'label' => 'Pengguna',         'icon' => 'users',    'route' => 'admin.pengguna.index'],
+            ['key' => 'admin.verifikasi', 'label' => 'Verifikasi Petani','icon' => 'shield',   'route' => 'admin.verifikasi.index', 'badge' => $pendingVerif],
+            ['key' => 'admin.toko',       'label' => 'Toko & Produk',    'icon' => 'package',  'route' => 'admin.toko.index'],
+            ['key' => 'admin.kategori',   'label' => 'Kategori',         'icon' => 'category', 'route' => 'admin.kategori.index'],
+        ]],
+        ['label' => 'Konten', 'items' => [
+            ['key' => 'admin.hero', 'label' => 'Hero Banner', 'icon' => 'image', 'route' => 'admin.hero.index'],
+        ]],
+    ];
+
+    $sections = match ($role) {
+        UserRole::Petani => $petaniSections,
+        UserRole::Admin  => $adminSections,
+        default          => [],
     };
 
-    $icons = [
-        'home'      => '<path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/>',
-        'users'     => '<path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"/>',
-        'file-text' => '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/><path d="M9 9l1 0"/><path d="M9 13l6 0"/><path d="M9 17l6 0"/>',
-        'package'   => '<path d="M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5"/><path d="M12 12l8 -4.5"/><path d="M12 12l0 9"/><path d="M12 12l-8 -4.5"/>',
-        'cart'      => '<path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17h-11v-14h-2"/><path d="M6 5l14 1l-1 7h-13"/>',
-        'shield'    => '<path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3"/><path d="M9 12l2 2l4 -4"/>',
-        'category'  => '<path d="M4 4h6v6h-6z"/><path d="M14 4h6v6h-6z"/><path d="M4 14h6v6h-6z"/><path d="M17 17m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/>',
-        'image'     => '<path d="M15 8h.01"/><path d="M4 4m0 3a3 3 0 0 1 3 -3h10a3 3 0 0 1 3 3v10a3 3 0 0 1 -3 3h-10a3 3 0 0 1 -3 -3z"/><path d="M4 15l4 -4a3 5 0 0 1 3 0l5 5"/><path d="M14 14l1 -1a3 5 0 0 1 3 0l2 2"/>',
-        'settings'  => '<path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>',
-    ];
+    // Inisial untuk avatar fallback.
+    $initials = $user
+        ? collect(explode(' ', trim($user->name)))->filter()->take(2)
+            ->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('')
+        : '';
 @endphp
+
+<style>
+    .navbar-vertical{
+        background: linear-gradient(180deg, var(--side-bg) 0%, var(--side-bg-2) 100%) !important;
+        border:0 !important;
+        box-shadow: 4px 0 24px -16px rgba(0,0,0,.5);
+    }
+    .navbar-vertical .navbar-brand{ padding:1.1rem 1.25rem .25rem;display:flex;align-items:center;gap:.6rem; }
+    .navbar-vertical .navbar-brand img{ filter: drop-shadow(0 2px 8px rgba(16,185,129,.4)); }
+    .navbar-vertical .navbar-brand span{
+        font-weight:800;font-size:1.05rem;color:#fff;letter-spacing:-.02em;
+        background: linear-gradient(135deg, #fff 0%, #a7f3d0 100%);
+        -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    }
+
+    /* Role chip */
+    .side-rolechip{
+        display:inline-flex;align-items:center;gap:.3rem;
+        padding:.25rem .55rem;border-radius:999px;
+        font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+        background: rgba(16,185,129,.18);color: #6ee7b7;
+        border:1px solid rgba(16,185,129,.3);
+    }
+    .side-rolechip.is-admin{ background: rgba(99,102,241,.18); color:#a5b4fc; border-color: rgba(99,102,241,.3); }
+
+    /* Sections */
+    .side-section{ padding: .25rem .75rem .35rem; }
+    .side-section-label{
+        font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+        color: var(--side-text-soft);padding:.6rem .9rem .4rem;
+    }
+
+    /* Nav items */
+    .side-nav{ list-style:none;margin:0;padding:0; }
+    .side-nav-item{ margin:2px 0; }
+    .side-nav-link{
+        display:flex;align-items:center;gap:.7rem;
+        padding:.65rem .8rem;border-radius: var(--radius-sm);
+        color: var(--side-text);text-decoration:none;
+        font-weight:500;font-size:.93rem;letter-spacing:-.005em;
+        position:relative;transition: background .15s, color .15s, transform .15s;
+    }
+    .side-nav-link:hover{ background: var(--side-hover); color:#fff; }
+    .side-nav-link.is-active{
+        background: var(--side-active);
+        color:#fff;font-weight:600;
+        box-shadow: inset 0 0 0 1px var(--side-active-bd);
+    }
+    .side-nav-link.is-active::before{
+        content:"";position:absolute;left:-12px;top:50%;transform:translateY(-50%);
+        width:4px;height:22px;background: var(--brand-500);border-radius:0 4px 4px 0;
+    }
+    .side-nav-link .icon{ width:22px;height:22px;flex-shrink:0; }
+    .side-nav-link .badge{
+        margin-left:auto;background: var(--accent);color:#fff;
+        font-size:.65rem;padding:.2em .5em;font-weight:700;
+    }
+
+    /* Footer user card */
+    .side-foot{
+        margin-top:auto;padding:1rem;border-top:1px solid rgba(255,255,255,.06);
+    }
+    .side-user{
+        display:flex;align-items:center;gap:.7rem;
+        background: rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.06);
+        padding:.7rem .8rem;border-radius: var(--radius);
+    }
+    .side-user .av{
+        width:38px;height:38px;border-radius:50%;
+        background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+        color:#fff;display:inline-flex;align-items:center;justify-content:center;
+        font-weight:700;font-size:.85rem;flex-shrink:0;
+    }
+    .side-user .name{ color:#fff;font-weight:600;font-size:.9rem;line-height:1.1; }
+    .side-user .email{ color: var(--side-text-soft);font-size:.72rem;line-height:1.2; }
+    .side-user .logout{
+        margin-left:auto;color: var(--side-text-soft);
+        background:transparent;border:0;width:32px;height:32px;border-radius:8px;
+        display:inline-flex;align-items:center;justify-content:center;
+        transition: background .15s, color .15s;
+    }
+    .side-user .logout:hover{ background: rgba(239,68,68,.15);color:#fca5a5; }
+
+    .navbar-vertical .container-fluid{
+        padding:0;
+        display:flex;flex-direction:column;height:100%;
+    }
+    .navbar-vertical .navbar-collapse{
+        flex:1 1 auto;display:flex;flex-direction:column;
+        padding:.5rem .25rem;overflow-y:auto;
+    }
+</style>
 
 <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
     <div class="container-fluid">
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-label="Toggle navigation">
+        <button class="navbar-toggler position-absolute end-0 top-0 m-2" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <x-logo :withText="true" />
+        <a href="{{ route('home') }}" class="navbar-brand m-0">
+            <img src="{{ asset('img/logo.png') }}" width="36" height="36" alt="{{ config('app.name') }}" class="navbar-brand-image">
+            <span>SPHT-JUJUN</span>
+        </a>
+
+        @if ($role)
+            <div class="px-3 mb-2">
+                <span class="side-rolechip {{ $role === UserRole::Admin ? 'is-admin' : '' }}">
+                    <i class="ti ti-{{ $role === UserRole::Admin ? 'shield-lock' : 'plant-2' }}"></i>
+                    {{ $role->label() }}
+                </span>
+            </div>
+        @endif
 
         <div class="collapse navbar-collapse" id="sidebar-menu">
-            <ul class="navbar-nav pt-lg-3">
-                @foreach ($navItems as $item)
-                    <li @class(['nav-item', 'active' => $active === $item['key']])>
-                        <a class="nav-link position-relative" href="{{ $item['route'] ? route($item['route']) : '#' }}">
-                            <span class="nav-link-icon d-md-none d-lg-inline-block position-relative">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                    {!! $icons[$item['icon']] !!}
-                                </svg>
-                                @if (! empty($item['badge']) && $item['badge'] > 0)
-                                    <span class="badge bg-red position-absolute translate-middle rounded-pill"
-                                          style="top:2px;left:100%;font-size:.6rem;padding:.15rem .35rem;min-width:1.1rem;">
-                                        {{ $item['badge'] > 99 ? '99+' : $item['badge'] }}
+            @foreach ($sections as $section)
+                <div class="side-section">
+                    <div class="side-section-label">{{ $section['label'] }}</div>
+                    <ul class="side-nav">
+                        @foreach ($section['items'] as $item)
+                            @php $isActive = $active === $item['key']; @endphp
+                            <li class="side-nav-item">
+                                <a class="side-nav-link {{ $isActive ? 'is-active' : '' }}"
+                                   href="{{ $item['route'] ? route($item['route']) : '#' }}">
+                                    <span class="icon">
+                                        <i class="ti ti-{{ match($item['icon']){
+                                            'home' => 'layout-dashboard',
+                                            'users' => 'users',
+                                            'file-text' => 'file-invoice',
+                                            'package' => 'package',
+                                            'cart' => 'shopping-cart',
+                                            'shield' => 'shield-check',
+                                            'category' => 'category-2',
+                                            'image' => 'photo',
+                                            default => $item['icon'],
+                                        } }}"></i>
                                     </span>
-                                @endif
-                            </span>
-                            <span class="nav-link-title">{{ $item['label'] }}</span>
-                        </a>
-                    </li>
-                @endforeach
-            </ul>
+                                    <span>{{ $item['label'] }}</span>
+                                    @if (! empty($item['badge']) && $item['badge'] > 0)
+                                        <span class="badge">{{ $item['badge'] > 99 ? '99+' : $item['badge'] }}</span>
+                                    @endif
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endforeach
+
+            <div class="side-foot">
+                <div class="side-user">
+                    <span class="av">{{ $initials ?: 'U' }}</span>
+                    <div class="flex-fill text-truncate">
+                        <div class="name text-truncate">{{ $user->name }}</div>
+                        <div class="email text-truncate">{{ $user->email }}</div>
+                    </div>
+                    <form method="POST" action="{{ route('logout') }}" class="m-0">
+                        @csrf
+                        <button type="submit" class="logout" title="Keluar">
+                            <i class="ti ti-logout"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </aside>

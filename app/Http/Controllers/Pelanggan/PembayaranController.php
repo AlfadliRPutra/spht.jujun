@@ -38,9 +38,7 @@ class PembayaranController extends Controller
     public function store(Request $request, CheckoutSummaryService $summary): RedirectResponse
     {
         $data = $request->validate([
-            'nama_penerima'     => ['required', 'string', 'max:255'],
-            'no_hp_penerima'    => ['required', 'string', 'max:30'],
-            'alamat_pengiriman' => ['required', 'string', 'max:1000'],
+            'address_id' => ['required', 'integer', 'exists:addresses,id'],
         ]);
 
         $user = $request->user();
@@ -49,6 +47,13 @@ class PembayaranController extends Controller
         if (! $cart || $cart->items->isEmpty()) {
             return redirect()->route('pelanggan.keranjang.index')
                 ->with('error', 'Keranjang kosong.');
+        }
+
+        // Pastikan alamat yang dipilih milik user yang sedang checkout.
+        $address = $user->addresses()->whereKey($data['address_id'])->first();
+        if (! $address) {
+            return redirect()->route('pelanggan.checkout.index')
+                ->with('error', 'Alamat pengiriman tidak valid.');
         }
 
         foreach ($cart->items as $item) {
@@ -62,21 +67,15 @@ class PembayaranController extends Controller
             }
         }
 
-        // Pembeli wajib sudah melengkapi alamat (province/city/district) sebelum bayar.
-        if (! $user->hasCompleteAddress()) {
-            return redirect()->route('profile.edit')
-                ->with('error', 'Lengkapi alamat pengiriman (provinsi/kota/kecamatan) sebelum melakukan pembayaran.');
-        }
-
-        // Hitung ulang ongkir per toko di server — jangan percaya nilai dari client.
-        $checkout = $summary->build($cart, $user);
+        // Hitung ulang ongkir per toko di server — pakai snapshot alamat terpilih.
+        $checkout = $summary->build($cart, $user, $address->snapshot());
 
         if ($checkout['has_blocked_store']) {
-            return redirect()->route('pelanggan.checkout.index')
+            return redirect()->route('pelanggan.checkout.index', ['address_id' => $address->id])
                 ->with('error', 'Beberapa toko tidak dapat melayani pengiriman ke alamat Anda. Hapus produknya dari keranjang.');
         }
 
-        $order = DB::transaction(function () use ($cart, $user, $data, $checkout) {
+        $order = DB::transaction(function () use ($cart, $user, $address, $checkout) {
             $order = Order::create([
                 'user_id'                => $user->id,
                 'subtotal_produk'        => $checkout['subtotal_produk'],
@@ -85,15 +84,15 @@ class PembayaranController extends Controller
                 'total_harga'            => $checkout['grand_total'],
                 'status'                 => OrderStatus::Pending,
                 'metode_pembayaran'      => 'midtrans',
-                'nama_penerima'          => $data['nama_penerima'],
-                'no_hp_penerima'         => $data['no_hp_penerima'],
-                'alamat_pengiriman'      => $data['alamat_pengiriman'],
-                'shipping_province_id'   => $user->province_id,
-                'shipping_province_name' => $user->province_name,
-                'shipping_city_id'       => $user->city_id,
-                'shipping_city_name'     => $user->city_name,
-                'shipping_district_id'   => $user->district_id,
-                'shipping_district_name' => $user->district_name,
+                'nama_penerima'          => $address->nama_penerima,
+                'no_hp_penerima'         => $address->no_hp_penerima,
+                'alamat_pengiriman'      => $address->alamat,
+                'shipping_province_id'   => $address->province_id,
+                'shipping_province_name' => $address->province_name,
+                'shipping_city_id'       => $address->city_id,
+                'shipping_city_name'     => $address->city_name,
+                'shipping_district_id'   => $address->district_id,
+                'shipping_district_name' => $address->district_name,
             ]);
 
             foreach ($cart->items as $item) {

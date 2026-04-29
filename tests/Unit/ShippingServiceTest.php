@@ -16,10 +16,10 @@ class ShippingServiceTest extends TestCase
         $this->service = new ShippingService();
     }
 
-    private function address(string $city, string $district): array
+    private function address(string $province, string $city, string $district): array
     {
         return [
-            'province_id' => '12',
+            'province_id' => $province,
             'city_id'     => $city,
             'district_id' => $district,
         ];
@@ -28,8 +28,8 @@ class ShippingServiceTest extends TestCase
     public function test_same_district_uses_base_fee_when_under_base_weight(): void
     {
         $result = $this->service->calculateShipping(
-            $this->address('1271', '127101'),
-            $this->address('1271', '127101'),
+            $this->address('12', '1271', '127101'),
+            $this->address('12', '1271', '127101'),
             3.0,
         );
 
@@ -46,8 +46,8 @@ class ShippingServiceTest extends TestCase
     {
         // 7 kg → 5 kg dasar + 2 kg ekstra × 2000 = 10000 + 4000 = 14000
         $result = $this->service->calculateShipping(
-            $this->address('1271', '127101'),
-            $this->address('1271', '127101'),
+            $this->address('12', '1271', '127101'),
+            $this->address('12', '1271', '127101'),
             7.0,
         );
 
@@ -59,8 +59,8 @@ class ShippingServiceTest extends TestCase
     {
         // 6 kg → 20000 + 1 × 3000 = 23000
         $result = $this->service->calculateShipping(
-            $this->address('1271', '127101'),
-            $this->address('1271', '127102'),
+            $this->address('12', '1271', '127101'),
+            $this->address('12', '1271', '127102'),
             6.0,
         );
 
@@ -71,25 +71,44 @@ class ShippingServiceTest extends TestCase
         $this->assertSame(23000, $result['shipping_cost']);
     }
 
-    public function test_outside_city_blocks_shipment(): void
+    public function test_same_province_different_city(): void
     {
+        // 6 kg, beda kabupaten dalam provinsi yang sama → 25000 + 1 × 3000 = 28000
         $result = $this->service->calculateShipping(
-            $this->address('1271', '127101'),
-            $this->address('1275', '127501'),
-            2.0,
+            $this->address('12', '1271', '127101'),
+            $this->address('12', '1275', '127501'),
+            6.0,
         );
 
-        $this->assertFalse($result['available']);
-        $this->assertSame('outside_city', $result['zone']);
-        $this->assertSame(0, $result['shipping_cost']);
+        $this->assertTrue($result['available']);
+        $this->assertSame('same_province', $result['zone']);
+        $this->assertSame(25000, $result['base_fee']);
+        $this->assertSame(3000, $result['extra_fee_per_kg']);
+        $this->assertSame(28000, $result['shipping_cost']);
+    }
+
+    public function test_outside_province_charges_fee(): void
+    {
+        // 6 kg, beda provinsi → 30000 + 1 × 3000 = 33000
+        $result = $this->service->calculateShipping(
+            $this->address('12', '1271', '127101'),
+            $this->address('32', '3273', '327301'),
+            6.0,
+        );
+
+        $this->assertTrue($result['available']);
+        $this->assertSame('outside_province', $result['zone']);
+        $this->assertSame(30000, $result['base_fee']);
+        $this->assertSame(3000, $result['extra_fee_per_kg']);
+        $this->assertSame(33000, $result['shipping_cost']);
     }
 
     public function test_decimal_weight_is_rounded_up(): void
     {
         // 5.1 kg → ceil = 6 kg → same_district: 10000 + 1 × 2000 = 12000
         $result = $this->service->calculateShipping(
-            $this->address('1271', '127101'),
-            $this->address('1271', '127101'),
+            $this->address('12', '1271', '127101'),
+            $this->address('12', '1271', '127101'),
             5.1,
         );
 
@@ -103,7 +122,7 @@ class ShippingServiceTest extends TestCase
 
         $this->service->calculateShipping(
             ['province_id' => '12'],
-            $this->address('1271', '127101'),
+            $this->address('12', '1271', '127101'),
             3.0,
         );
     }
@@ -113,8 +132,8 @@ class ShippingServiceTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         $this->service->calculateShipping(
-            $this->address('1271', '127101'),
-            $this->address('1271', '127101'),
+            $this->address('12', '1271', '127101'),
+            $this->address('12', '1271', '127101'),
             0,
         );
     }

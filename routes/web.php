@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\TokoController as AdminTokoController;
 use App\Http\Controllers\Admin\VerifikasiController as AdminVerifikasiController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\KatalogController;
+use App\Http\Controllers\Pelanggan\AlamatController as PelangganAlamatController;
 use App\Http\Controllers\Pelanggan\CheckoutController as PelangganCheckoutController;
 use App\Http\Controllers\Pelanggan\PembayaranController as PelangganPembayaranController;
 use App\Http\Controllers\Pelanggan\PesananController as PelangganPesananController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Petani\ProdukController as PetaniProdukController;
 use App\Http\Controllers\Petani\PesananController as PetaniPesananController;
 use App\Http\Controllers\Petani\VerifikasiController as PetaniVerifikasiController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\WilayahController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [KatalogController::class, 'index'])->name('home');
@@ -28,7 +30,7 @@ Route::prefix('katalog')->name('pelanggan.katalog.')->group(function () {
 Route::post('/midtrans/notification', [PelangganPembayaranController::class, 'notification'])
     ->name('midtrans.notification');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'profile.complete'])->group(function () {
     Route::get('/dashboard', function () {
         if (auth()->user()->role === UserRole::Pelanggan) {
             return redirect()->route('pelanggan.katalog.index');
@@ -40,6 +42,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/',    [ProfileController::class, 'edit'])->name('edit');
         Route::patch('/',  [ProfileController::class, 'update'])->name('update');
         Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('wilayah')->name('wilayah.')->group(function () {
+        Route::get('/cities/{province}',    [WilayahController::class, 'cities'])->name('cities');
+        Route::get('/districts/{regency}',  [WilayahController::class, 'districts'])->name('districts');
     });
 
     Route::middleware('role:petani')->prefix('petani')->name('petani.')->group(function () {
@@ -69,6 +76,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/keranjang',  [CartController::class, 'store'])->name('keranjang.store');
         Route::view('/keranjang',  'pages.pelanggan.keranjang.index')->name('keranjang.index');
         Route::get('/checkout',    [PelangganCheckoutController::class, 'index'])->name('checkout.index');
+
+        Route::prefix('alamat')->name('alamat.')->group(function () {
+            Route::post('/',                       [PelangganAlamatController::class, 'store'])->name('store');
+            Route::patch('/{alamat}',              [PelangganAlamatController::class, 'update'])->name('update');
+            Route::delete('/{alamat}',             [PelangganAlamatController::class, 'destroy'])->name('destroy');
+            Route::patch('/{alamat}/default',      [PelangganAlamatController::class, 'setDefault'])->name('default');
+        });
 
         Route::post('/pembayaran',                    [PelangganPembayaranController::class, 'store'])->name('pembayaran.store');
         Route::get('/pembayaran',                     [PelangganPembayaranController::class, 'latest'])->name('pembayaran.latest');

@@ -105,12 +105,6 @@
                     Total Pesanan
                     <strong>Rp {{ number_format($order->total_harga, 0, ',', '.') }}</strong>
                 </div>
-<<<<<<< HEAD
-                <button type="button" class="btn btn-outline-success btn-sm"
-                        data-bs-toggle="modal" data-bs-target="#detail-order-{{ $order->id }}">
-                    Detail <i class="ti ti-arrow-right ms-1"></i>
-                </button>
-=======
                 <div class="d-flex gap-2 flex-wrap">
                     @if ($order->status === \App\Enums\OrderStatus::Pending && $order->metode_pembayaran === 'midtrans')
                         <form action="{{ route('pelanggan.pembayaran.sync', $order) }}" method="POST" class="d-inline">
@@ -124,12 +118,11 @@
                         </a>
                     @else
                         <button type="button" class="btn btn-outline-success btn-sm"
-                        data-bs-toggle="modal" data-bs-target="#detail-order-{{ $order->id }}">
+                                data-bs-toggle="modal" data-bs-target="#detail-order-{{ $order->id }}">
                             Detail <i class="ti ti-arrow-right ms-1"></i>
                         </button>
                     @endif
                 </div>
->>>>>>> 514f8e1d465b4dec06dcd35d8ea5b523151ae24c
             </div>
         </div>
     @empty

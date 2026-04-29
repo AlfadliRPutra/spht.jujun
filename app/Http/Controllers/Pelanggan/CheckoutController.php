@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Pelanggan;
 
 use App\Http\Controllers\Controller;
+use App\Models\Address;
 use App\Services\CheckoutSummaryService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -19,12 +20,27 @@ class CheckoutController extends Controller
                 ->with('error', 'Keranjang kosong.');
         }
 
-        // Bangun ringkasan ongkir per toko (validasi alamat + zona dilakukan di service).
-        $checkout = $summary->build($cart, $user);
+        $addresses = $user->addresses()->get();
+
+        if ($addresses->isEmpty()) {
+            return redirect()->route('profile.edit')
+                ->with('error', 'Tambahkan minimal satu alamat pengiriman sebelum melakukan checkout.');
+        }
+
+        // Address picker: ambil dari query, atau default user, atau alamat pertama.
+        $selectedId = (int) $request->query('address_id', 0);
+        $selected   = $selectedId
+            ? $addresses->firstWhere('id', $selectedId)
+            : null;
+        $selected   ??= $addresses->firstWhere('is_default', true) ?? $addresses->first();
+
+        $checkout = $summary->build($cart, $user, $selected->snapshot());
 
         return view('pages.pelanggan.checkout.index', [
-            'cart'     => $cart,
-            'checkout' => $checkout,
+            'cart'              => $cart,
+            'checkout'          => $checkout,
+            'addresses'         => $addresses,
+            'selectedAddress'   => $selected,
         ]);
     }
 }

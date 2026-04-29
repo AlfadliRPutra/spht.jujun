@@ -32,47 +32,74 @@
                         <li>{{ $err }}</li>
                     @endforeach
                 </ul>
-                @if (! $user->hasCompleteAddress())
-                    <div class="mt-2">
-                        <a href="{{ route('profile.edit') }}" class="btn btn-sm btn-warning">
-                            <i class="ti ti-map-pin me-1"></i> Lengkapi Alamat
-                        </a>
-                    </div>
-                @endif
             </div>
         @endif
 
         <form action="{{ route('pelanggan.pembayaran.store') }}" method="POST" class="row row-cards">
             @csrf
+            <input type="hidden" name="address_id" value="{{ $selectedAddress->id }}">
+
             <div class="col-md-7">
                 <div class="card mb-3">
-                    <div class="card-header"><h3 class="card-title">Alamat Pengiriman</h3></div>
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <h3 class="card-title mb-0">Alamat Pengiriman</h3>
+                        <a href="{{ route('profile.edit') }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="ti ti-plus me-1"></i> Kelola Alamat
+                        </a>
+                    </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label required">Nama Penerima</label>
-                            <input type="text" name="nama_penerima" class="form-control @error('nama_penerima') is-invalid @enderror" value="{{ old('nama_penerima', $user->name) }}" required>
-                            @error('nama_penerima')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label required">No. HP</label>
-                            <input type="text" name="no_hp_penerima" class="form-control @error('no_hp_penerima') is-invalid @enderror" value="{{ old('no_hp_penerima', $user->no_hp) }}" required>
-                            @error('no_hp_penerima')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Wilayah</label>
-                            <div class="form-control bg-light" style="min-height:auto">
-                                @if ($user->hasCompleteAddress())
-                                    {{ $user->district_name }}, {{ $user->city_name }}, {{ $user->province_name }}
-                                @else
-                                    <span class="text-danger">Belum lengkap — </span>
-                                    <a href="{{ route('profile.edit') }}">atur di profil</a>
-                                @endif
+                        @if ($addresses->count() > 1)
+                            <div class="mb-3">
+                                <label class="form-label small text-secondary mb-2">Pilih dari alamat tersimpan ({{ $addresses->count() }}):</label>
+                                <div class="row g-2">
+                                    @foreach ($addresses as $addr)
+                                        @php $isSelected = $addr->id === $selectedAddress->id; @endphp
+                                        <div class="col-md-6">
+                                            <a href="{{ route('pelanggan.checkout.index', ['address_id' => $addr->id]) }}"
+                                               class="d-block p-3 rounded border text-decoration-none {{ $isSelected ? 'border-success bg-success-lt' : 'text-body' }}"
+                                               style="transition:all .15s">
+                                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                                    <div>
+                                                        <span class="fw-bold">{{ $addr->label ?: 'Alamat' }}</span>
+                                                        @if ($addr->is_default)
+                                                            <span class="badge bg-success-lt text-success border-0 ms-1"><i class="ti ti-star-filled me-1"></i>Utama</span>
+                                                        @endif
+                                                    </div>
+                                                    @if ($isSelected)
+                                                        <i class="ti ti-circle-check text-success"></i>
+                                                    @else
+                                                        <i class="ti ti-circle text-secondary"></i>
+                                                    @endif
+                                                </div>
+                                                <div class="small">{{ $addr->nama_penerima }} · {{ $addr->no_hp_penerima }}</div>
+                                                <div class="small text-secondary">
+                                                    {{ $addr->district_name }}, {{ $addr->city_name }}
+                                                </div>
+                                            </a>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
-                        </div>
-                        <div class="mb-0">
-                            <label class="form-label required">Alamat Lengkap</label>
-                            <textarea name="alamat_pengiriman" class="form-control @error('alamat_pengiriman') is-invalid @enderror" rows="3" required>{{ old('alamat_pengiriman', $user->alamat) }}</textarea>
-                            @error('alamat_pengiriman')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <hr>
+                        @endif
+
+                        <div class="row g-3 small">
+                            <div class="col-md-6">
+                                <div class="text-secondary">Penerima</div>
+                                <div class="fw-semibold">{{ $selectedAddress->nama_penerima }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-secondary">No. HP</div>
+                                <div class="fw-semibold">{{ $selectedAddress->no_hp_penerima }}</div>
+                            </div>
+                            <div class="col-12">
+                                <div class="text-secondary">Wilayah</div>
+                                <div>{{ $selectedAddress->district_name }}, {{ $selectedAddress->city_name }}, {{ $selectedAddress->province_name }}</div>
+                            </div>
+                            <div class="col-12">
+                                <div class="text-secondary">Alamat Lengkap</div>
+                                <div>{{ $selectedAddress->alamat }}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -165,7 +192,7 @@
                                 <i class="ti ti-credit-card" style="font-size:1.6rem"></i>
                             </div>
                             <div class="flex-fill">
-                                <div class="fw-semibold">Pembayaran via Midtrans</div>
+                                <div class="fw-semibold">Pembayaran Online</div>
                                 <div class="text-secondary small">Virtual Account, QRIS, E-Wallet, Kartu Kredit &mdash; pilih di halaman berikutnya.</div>
                             </div>
                             <span class="badge bg-green-lt"><i class="ti ti-shield-check me-1"></i>Aman</span>
@@ -219,8 +246,8 @@
                         </div>
                     </div>
                     <div class="card-footer">
-                        <button type="submit" class="btn btn-success w-100" @disabled($hasBlockedStore || ! $user->hasCompleteAddress())>
-                            <i class="ti ti-credit-card me-1"></i> Bayar via Midtrans
+                        <button type="submit" class="btn btn-success w-100" @disabled($hasBlockedStore)>
+                            <i class="ti ti-credit-card me-1"></i> Lanjut Pembayaran
                         </button>
                         @if ($hasBlockedStore)
                             <div class="text-danger small text-center mt-2">

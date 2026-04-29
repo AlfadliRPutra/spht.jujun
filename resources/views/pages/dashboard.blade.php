@@ -13,10 +13,6 @@
 
 <x-layouts.app :title="$title" :active="$active">
     @switch($user->role)
-        @case(UserRole::Pelanggan)
-            @include('pages.partials.dashboard-pelanggan', ['user' => $user])
-            @break
-
         @case(UserRole::Petani)
             @include('pages.partials.dashboard-petani', ['user' => $user])
             @break
