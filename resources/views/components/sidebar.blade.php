@@ -14,6 +14,10 @@
             ->count()
         : 0;
 
+    $pesananMasuk = $role === UserRole::Petani
+        ? $user->petaniIncomingOrdersCount()
+        : 0;
+
     // Menu disusun per "section" untuk pengelompokan visual yang lebih bersih.
     $petaniSections = [
         ['label' => 'Utama', 'items' => [
@@ -21,7 +25,7 @@
             ['key' => 'petani.produk',   'label' => 'Produk Saya', 'icon' => 'package',  'route' => 'petani.produk.index'],
         ]],
         ['label' => 'Penjualan', 'items' => [
-            ['key' => 'petani.pesanan', 'label' => 'Pesanan Masuk',   'icon' => 'cart',      'route' => 'petani.pesanan.index'],
+            ['key' => 'petani.pesanan', 'label' => 'Pesanan Masuk',   'icon' => 'cart',      'route' => 'petani.pesanan.index', 'badge' => $pesananMasuk],
             ['key' => 'petani.laporan', 'label' => 'Riwayat Transaksi','icon' => 'file-text', 'route' => 'petani.laporan.index'],
         ]],
     ];

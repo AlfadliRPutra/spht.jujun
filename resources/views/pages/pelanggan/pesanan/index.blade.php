@@ -105,8 +105,13 @@
                     Total Pesanan
                     <strong>Rp {{ number_format($order->total_harga, 0, ',', '.') }}</strong>
                 </div>
-                <div class="d-flex gap-2 flex-wrap">
-                    @if ($order->status === \App\Enums\OrderStatus::Pending && $order->metode_pembayaran === 'midtrans')
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                    @if ($order->status === \App\Enums\OrderStatus::Pending && $order->metode_pembayaran === 'midtrans' && ! $order->isPaymentExpired())
+                        @if ($order->expires_at)
+                            <span class="text-secondary small d-inline-flex align-items-center" data-pay-countdown="{{ $order->expires_at->toIso8601String() }}">
+                                <i class="ti ti-clock me-1"></i><span data-countdown-text>—</span>
+                            </span>
+                        @endif
                         <form action="{{ route('pelanggan.pembayaran.sync', $order) }}" method="POST" class="d-inline">
                             @csrf
                             <button type="submit" class="btn btn-outline-secondary btn-sm">
@@ -117,6 +122,11 @@
                             <i class="ti ti-credit-card me-1"></i> Lanjutkan Bayar
                         </a>
                     @else
+                        @if ($order->status === \App\Enums\OrderStatus::Pending && $order->isPaymentExpired())
+                            <span class="text-danger small d-inline-flex align-items-center">
+                                <i class="ti ti-clock-x me-1"></i> Batas waktu terlewat
+                            </span>
+                        @endif
                         <button type="button" class="btn btn-outline-success btn-sm"
                                 data-bs-toggle="modal" data-bs-target="#detail-order-{{ $order->id }}">
                             Detail <i class="ti ti-arrow-right ms-1"></i>
@@ -219,14 +229,52 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">Tutup</button>
-                        @if ($order->status->value === 'pending')
-                            <a href="{{ route('pelanggan.pembayaran.index') }}" class="btn btn-success">
+                        @if ($order->status->value === 'pending' && ! $order->isPaymentExpired())
+                            <a href="{{ route('pelanggan.pembayaran.show', $order) }}" class="btn btn-success">
                                 <i class="ti ti-credit-card me-1"></i> Bayar Sekarang
                             </a>
+                        @elseif ($order->status->value === 'pending' && $order->isPaymentExpired())
+                            <span class="text-danger small me-2"><i class="ti ti-clock-x me-1"></i>Batas waktu pembayaran terlewat</span>
                         @endif
                     </div>
                 </div>
             </div>
         </div>
     @endforeach
+
+    @push('scripts')
+        <script>
+            // Live countdown untuk order Pending — refresh halaman saat habis
+            // supaya status server-side (Batal) ter-render ulang.
+            (function () {
+                const els = document.querySelectorAll('[data-pay-countdown]');
+                if (! els.length) return;
+
+                function pad(n) { return String(n).padStart(2, '0'); }
+
+                function tick() {
+                    let anyExpired = false;
+                    els.forEach(el => {
+                        const target = new Date(el.dataset.payCountdown).getTime();
+                        const diff   = target - Date.now();
+                        const txt    = el.querySelector('[data-countdown-text]');
+                        if (! txt) return;
+                        if (diff <= 0) {
+                            txt.textContent = 'Kedaluwarsa';
+                            el.classList.add('text-danger');
+                            anyExpired = true;
+                            return;
+                        }
+                        const m = Math.floor(diff / 60000);
+                        const s = Math.floor((diff % 60000) / 1000);
+                        txt.textContent = pad(m) + ':' + pad(s);
+                        if (diff < 60000) el.classList.add('text-danger');
+                    });
+                    if (anyExpired) setTimeout(() => window.location.reload(), 1500);
+                }
+                tick();
+                setInterval(tick, 1000);
+            })();
+        </script>
+    @endpush
 </x-layouts.storefront>

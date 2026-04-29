@@ -17,6 +17,10 @@
             ->count()
         : 0;
 
+    $pesananMasuk = $role === UserRole::Petani
+        ? $user->petaniIncomingOrdersCount()
+        : 0;
+
     $initials = $user
         ? collect(explode(' ', trim($user->name)))->filter()->take(2)
             ->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('')
@@ -134,11 +138,14 @@
                         @break
                 @endswitch
 
-                {{-- Notifications (placeholder, untuk masa depan) --}}
+                @php
+                    $hasNotif = ($role === UserRole::Admin && $pendingVerif > 0)
+                             || ($role === UserRole::Petani && $pesananMasuk > 0);
+                @endphp
                 <div class="dropdown">
                     <button type="button" class="head-iconbtn" data-bs-toggle="dropdown" aria-label="Notifikasi">
                         <i class="ti ti-bell"></i>
-                        @if ($pendingVerif > 0 && $role === UserRole::Admin)
+                        @if ($hasNotif)
                             <span class="pulse"></span>
                         @endif
                     </button>
@@ -153,6 +160,14 @@
                                 <div>
                                     <div class="fw-semibold">{{ $pendingVerif }} petani menunggu verifikasi</div>
                                     <div class="small text-secondary">Tinjau & putuskan persetujuan akun</div>
+                                </div>
+                            </a>
+                        @elseif ($role === UserRole::Petani && $pesananMasuk > 0)
+                            <a href="{{ route('petani.pesanan.index', ['status' => 'dibayar']) }}" class="dropdown-item d-flex align-items-start gap-2">
+                                <i class="ti ti-shopping-bag text-success mt-1"></i>
+                                <div>
+                                    <div class="fw-semibold">{{ $pesananMasuk }} pesanan menunggu dikirim</div>
+                                    <div class="small text-secondary">Pelanggan sudah membayar — segera siapkan & kirim pesanan</div>
                                 </div>
                             </a>
                         @else

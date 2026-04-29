@@ -32,7 +32,14 @@ class Order extends Model
         'shipping_district_id',
         'shipping_district_name',
         'paid_at',
+        'expires_at',
     ];
+
+    /**
+     * Window pembayaran default untuk order baru (menit).
+     * Order Pending yang melewati window ini akan di-auto-cancel.
+     */
+    public const PAYMENT_TIMEOUT_MINUTES = 10;
 
     protected function casts(): array
     {
@@ -43,7 +50,33 @@ class Order extends Model
             'voucher_discount' => 'decimal:2',
             'status'           => OrderStatus::class,
             'paid_at'          => 'datetime',
+            'expires_at'       => 'datetime',
         ];
+    }
+
+    /**
+     * True kalau order ini Pending dan window pembayaran sudah lewat.
+     */
+    public function isPaymentExpired(): bool
+    {
+        return $this->status === OrderStatus::Pending
+            && $this->expires_at !== null
+            && $this->expires_at->isPast();
+    }
+
+    /**
+     * Tandai order Pending yang sudah lewat batas sebagai Batal.
+     * Idempoten: kalau status sudah bukan Pending, tidak melakukan apa-apa.
+     * Dipanggil lazy dari controller untuk defense-in-depth selain command terjadwal.
+     */
+    public function expireIfDue(): bool
+    {
+        if (! $this->isPaymentExpired()) {
+            return false;
+        }
+        $this->status = OrderStatus::Batal;
+        $this->save();
+        return true;
     }
 
     protected function code(): Attribute

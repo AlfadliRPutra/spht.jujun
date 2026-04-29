@@ -93,6 +93,7 @@ class PembayaranController extends Controller
                 'shipping_city_name'     => $address->city_name,
                 'shipping_district_id'   => $address->district_id,
                 'shipping_district_name' => $address->district_name,
+                'expires_at'             => now()->addMinutes(Order::PAYMENT_TIMEOUT_MINUTES),
             ]);
 
             foreach ($cart->items as $item) {
@@ -141,6 +142,13 @@ class PembayaranController extends Controller
 
         $this->syncStatusFromMidtrans($order);
 
+        // Pastikan order yang sudah lewat batas waktu di-cancel walau Midtrans
+        // belum mengabarkan (mis. notifikasi terlambat / sandbox tidak terkirim).
+        if ($order->expireIfDue()) {
+            return redirect()->route('pelanggan.pesanan.index')
+                ->with('error', 'Batas waktu pembayaran terlewat — pesanan dibatalkan.');
+        }
+
         if (in_array($order->status, [OrderStatus::Dibayar, OrderStatus::Dikirim, OrderStatus::Selesai], true)) {
             return redirect()->route('pelanggan.pesanan.index')
                 ->with('success', 'Status pembayaran diperbarui: '.$order->status->customerLabel().'.');
@@ -159,6 +167,7 @@ class PembayaranController extends Controller
     {
         $order = $request->user()->orders()
             ->where('status', OrderStatus::Pending)
+            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
             ->latest('id')
             ->first();
 
@@ -173,6 +182,13 @@ class PembayaranController extends Controller
     public function show(Order $order, Request $request): View|RedirectResponse
     {
         abort_unless($order->user_id === $request->user()->id, 403);
+
+        // Lazy expire — kalau user buka halaman pembayaran setelah window habis,
+        // langsung tandai Batal sebelum render apa pun.
+        if ($order->expireIfDue()) {
+            return redirect()->route('pelanggan.pesanan.index')
+                ->with('error', 'Batas waktu pembayaran terlewat — pesanan dibatalkan.');
+        }
 
         if ($order->status === OrderStatus::Batal) {
             return redirect()->route('pelanggan.pesanan.index')
@@ -400,6 +416,12 @@ class PembayaranController extends Controller
         $firstName = $nameParts[0] ?? '';
         $lastName  = $nameParts[1] ?? '';
 
+        // Selaraskan window pembayaran Midtrans dengan expires_at order kita.
+        // Midtrans akan otomatis menutup transaksi tepat di expires_at, jadi
+        // pelanggan tidak bisa bayar setelah lewat batas waktu.
+        $expiresAt = $order->expires_at ?? now()->addMinutes(Order::PAYMENT_TIMEOUT_MINUTES);
+        $remaining = max(1, (int) ceil(now()->diffInSeconds($expiresAt, false) / 60));
+
         $payload = [
             'transaction_details' => [
                 'order_id'     => $order->midtrans_order_id,
@@ -417,6 +439,11 @@ class PembayaranController extends Controller
                     'phone'      => $order->no_hp_penerima ?? $order->user->no_hp,
                     'address'    => $order->alamat_pengiriman,
                 ],
+            ],
+            'expiry' => [
+                'start_time' => now()->format('Y-m-d H:i:s O'),
+                'unit'       => 'minute',
+                'duration'   => $remaining,
             ],
             'callbacks' => [
                 'finish' => route('pelanggan.pembayaran.finish', $order),

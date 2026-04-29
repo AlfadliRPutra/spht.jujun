@@ -28,7 +28,10 @@
       "Bash(php -l app/Http/Controllers/Pelanggan/CheckoutController.php)",
       "Bash(php -l app/Http/Middleware/EnsureProfileComplete.php)",
       "Bash(php -l app/Services/ShippingService.php)",
-      "Bash(php -l tests/Unit/ShippingServiceTest.php)"
+      "Bash(php -l tests/Unit/ShippingServiceTest.php)",
+      "Bash(php -l app/Models/Order.php)",
+      "Bash(php -l app/Console/Commands/ExpirePendingOrders.php)",
+      "Bash(php -l routes/console.php)"
     ]
   }
 }

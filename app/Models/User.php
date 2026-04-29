@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -119,6 +120,27 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
+    }
+
+    /**
+     * Jumlah pesanan masuk yang menunggu diproses petani (status Dibayar).
+     * Dimemoisasi per request supaya sidebar + header + dashboard tidak query
+     * berulang dalam satu render halaman.
+     *
+     * @var array<int|string, int>
+     */
+    private static array $memoIncomingOrders = [];
+
+    public function petaniIncomingOrdersCount(): int
+    {
+        if (! $this->isPetani()) {
+            return 0;
+        }
+
+        return self::$memoIncomingOrders[$this->id] ??= Order::query()
+            ->where('status', OrderStatus::Dibayar)
+            ->whereHas('items.product', fn ($q) => $q->where('user_id', $this->id))
+            ->count();
     }
 
     /**

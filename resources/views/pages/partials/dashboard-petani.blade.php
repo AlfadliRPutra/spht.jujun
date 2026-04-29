@@ -14,6 +14,7 @@
         ->latest('id')
         ->get()
         ->groupBy('order_id');
+    $pesananMasukCount = $pesananBaru->count();
     $totalPendapatan = OrderItem::whereHas('product', fn ($q) => $q->where('user_id', $user->id))
         ->whereHas('order', fn ($q) => $q->where('status', OrderStatus::Selesai))
         ->get()
@@ -32,6 +33,38 @@
             </div>
         </div>
     </div>
+
+    @if ($pesananMasukCount > 0)
+        <div class="col-12">
+            <div class="card position-relative overflow-hidden">
+                <div class="card-status-start bg-success"></div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <div class="position-relative">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
+                                  style="width:52px;height:52px;background:#dcfce7;color:#15803d">
+                                <i class="ti ti-shopping-bag" style="font-size:1.6rem"></i>
+                            </span>
+                            <span class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-danger">
+                                {{ $pesananMasukCount > 99 ? '99+' : $pesananMasukCount }}
+                            </span>
+                        </div>
+                        <div class="flex-fill" style="min-width:0">
+                            <div class="h3 mb-1">
+                                {{ $pesananMasukCount }} pesanan baru menunggu Anda
+                            </div>
+                            <div class="text-secondary">
+                                Pelanggan sudah membayar. Segera siapkan barang dan tandai sebagai dikirim.
+                            </div>
+                        </div>
+                        <a href="{{ route('petani.pesanan.index', ['status' => 'dibayar']) }}" class="btn btn-success">
+                            <i class="ti ti-arrow-right me-1"></i> Proses Pesanan
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     @if ($verificationStatus === 'rejected')
         <div class="col-12">
