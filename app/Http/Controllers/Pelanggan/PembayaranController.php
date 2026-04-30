@@ -121,6 +121,11 @@ class PembayaranController extends Controller
                 ]);
             }
 
+            // Kosongkan keranjang segera setelah order dibuat — supaya item yang
+            // sudah di-checkout tidak muncul lagi di /pelanggan/keranjang
+            // (mencegah double-checkout walaupun nantinya order Pending ini batal).
+            $cart->items()->delete();
+
             return $order;
         });
 
@@ -339,16 +344,15 @@ class PembayaranController extends Controller
                 ], true);
 
                 if (! $wasPaid) {
+                    // Keranjang sudah dikosongkan saat order dibuat (lihat store()),
+                    // jadi di sini hanya perlu mengurangi stok produk.
                     DB::transaction(function () use ($order) {
-                        $order->load('items', 'user.cart.items');
+                        $order->load('items');
                         foreach ($order->items as $item) {
                             $product = Product::withTrashed()->lockForUpdate()->find($item->product_id);
                             if ($product) {
                                 $product->decrement('stok', $item->jumlah);
                             }
-                        }
-                        if ($order->user && $order->user->cart) {
-                            $order->user->cart->items()->delete();
                         }
                     });
                 }

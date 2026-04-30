@@ -20,6 +20,10 @@ class PesananController extends Controller
 
     public function index(Request $request): View
     {
+        // Cancel-on-view: order Pending yang sudah lewat batas pembayaran
+        // langsung berstatus Batal di tampilan ini juga.
+        Order::expireOverdue();
+
         $sortOptions = array_map(fn ($v) => $v[2], self::SORT_MAP);
         $sort = array_key_exists($request->input('sort'), self::SORT_MAP) ? $request->input('sort') : 'latest';
         [$sortCol, $sortDir] = self::SORT_MAP[$sort];
@@ -83,6 +87,34 @@ class PesananController extends Controller
         $order->update(['status' => OrderStatus::Selesai]);
 
         return back()->with('success', 'Pesanan #'.$order->id.' diselesaikan.');
+    }
+
+    /**
+     * Tampilkan resi pengiriman printable. Hanya untuk pesanan milik petani
+     * yang sudah dibayar (Dibayar/Dikirim/Selesai). Layout sengaja minimal +
+     * @media print supaya rapi saat dicetak ke kertas A5/struk.
+     */
+    public function resi(Request $request, Order $order): View
+    {
+        $petaniId = $request->user()->id;
+        $this->authorizeOrder($order, $petaniId);
+
+        if (in_array($order->status, [OrderStatus::Pending, OrderStatus::Batal], true)) {
+            abort(404);
+        }
+
+        $order->load(['user', 'items.product', 'shippings']);
+
+        $petani   = $request->user();
+        $ownItems = $order->items->filter(fn ($i) => $i->product?->user_id === $petaniId);
+        $shipping = $order->shippings->firstWhere('store_id', $petaniId);
+
+        return view('pages.petani.pesanan.resi', [
+            'order'    => $order,
+            'petani'   => $petani,
+            'ownItems' => $ownItems,
+            'shipping' => $shipping,
+        ]);
     }
 
     public function cancel(Request $request, Order $order): RedirectResponse

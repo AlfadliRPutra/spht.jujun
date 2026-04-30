@@ -59,6 +59,7 @@ Route::middleware(['auth', 'profile.complete'])->group(function () {
         });
         Route::prefix('pesanan')->name('pesanan.')->group(function () {
             Route::get('/',                     [PetaniPesananController::class, 'index'])->name('index');
+            Route::get('/{order}/resi',         [PetaniPesananController::class, 'resi'])->name('resi');
             Route::post('/{order}/ship',        [PetaniPesananController::class, 'ship'])->name('ship');
             Route::post('/{order}/complete',    [PetaniPesananController::class, 'complete'])->name('complete');
             Route::post('/{order}/cancel',      [PetaniPesananController::class, 'cancel'])->name('cancel');
@@ -92,7 +93,8 @@ Route::middleware(['auth', 'profile.complete'])->group(function () {
         Route::get('/pembayaran/{order}/error',       [PelangganPembayaranController::class, 'error'])->name('pembayaran.error');
         Route::post('/pembayaran/{order}/sync',       [PelangganPembayaranController::class, 'sync'])->name('pembayaran.sync');
 
-        Route::get('/pesanan',     [PelangganPesananController::class, 'index'])->name('pesanan.index');
+        Route::get('/pesanan',                          [PelangganPesananController::class, 'index'])->name('pesanan.index');
+        Route::post('/pesanan/{order}/diterima',        [PelangganPesananController::class, 'confirmReceived'])->name('pesanan.diterima');
     });
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {

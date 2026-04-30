@@ -1,32 +1,115 @@
 @php
     /** @var \Illuminate\Pagination\LengthAwarePaginator $items */
+    use App\Enums\OrderStatus;
     $title  = 'Pesanan Saya';
     $active = 'pelanggan.pesanan';
+
+    // Helper: posisi step untuk progress bar order.
+    // Pending=1, Dibayar=2, Dikirim=3, Selesai=4. Batal = -1 (terminal merah).
+    $stepIndex = fn (OrderStatus $s) => match ($s) {
+        OrderStatus::Pending => 1,
+        OrderStatus::Dibayar => 2,
+        OrderStatus::Dikirim => 3,
+        OrderStatus::Selesai => 4,
+        OrderStatus::Batal   => -1,
+    };
+    $steps = [
+        [OrderStatus::Pending, 'Menunggu Bayar', 'clock'],
+        [OrderStatus::Dibayar, 'Dikemas',        'package'],
+        [OrderStatus::Dikirim, 'Dikirim',        'truck-delivery'],
+        [OrderStatus::Selesai, 'Selesai',        'circle-check'],
+    ];
 @endphp
 
 <x-layouts.storefront :title="$title" :active="$active">
     @push('styles')
         <style>
-            .order-card { background:#fff; border:1px solid var(--spht-border); border-radius: var(--spht-radius); overflow:hidden; transition: border-color .15s ease, box-shadow .15s ease; }
-            .order-card:hover { border-color:#cbd5e1; box-shadow: 0 .5rem 1rem rgba(15,23,42,.04); }
-            .order-card-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.85rem 1.1rem; background:#f8fafc; border-bottom:1px solid var(--spht-border); flex-wrap:wrap; }
-            .order-card-head .left { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
-            .order-card-head .right { display:flex; align-items:center; gap:.6rem; color:var(--spht-muted); font-size:.82rem; flex-wrap:wrap; }
-            .order-code { font-family:'SF Mono','Menlo',monospace; font-size:.88rem; font-weight:600; color:#0f172a; letter-spacing:.02em; }
-            .order-date { font-size:.78rem; color:var(--spht-muted); display:block; margin-top:.15rem; }
-            .method-chip { display:inline-flex; align-items:center; gap:.25rem; padding:.18rem .55rem; border-radius:999px; background:#eef2f7; color:#334155; font-size:.72rem; text-transform:uppercase; letter-spacing:.03em; font-weight:600; }
+            /* Single list-item per order. Klik header untuk expand. */
+            .order-item {
+                background:#fff; border:1px solid var(--spht-border); border-radius: var(--spht-radius);
+                margin-bottom:.6rem; overflow:hidden;
+                transition: border-color .15s ease, box-shadow .15s ease;
+            }
+            .order-item:hover { border-color:#cbd5e1; }
+            .order-item[open] { box-shadow: 0 .5rem 1rem rgba(15,23,42,.06); border-color:#cbd5e1; }
 
+            /* <summary> = baris ringkas. Buang marker bawaan browser. */
+            .order-summary {
+                display:grid; align-items:center; gap:.85rem;
+                grid-template-columns: minmax(0,1.4fr) auto minmax(120px,auto) 28px;
+                padding:.75rem 1rem; cursor:pointer;
+                list-style:none; user-select:none;
+            }
+            .order-summary::-webkit-details-marker { display:none; }
+            .order-summary::marker { content:''; }
+            .order-summary:hover { background:#f8fafc; }
+
+            .os-meta { min-width:0; }
+            .os-meta .code { font-family:'SF Mono','Menlo',monospace; font-size:.88rem; font-weight:600; color:#0f172a; letter-spacing:.02em; }
+            .os-meta .date { font-size:.75rem; color:var(--spht-muted); margin-top:.1rem; }
+
+            .os-total { font-weight:700; color:var(--spht-green-dark, #15803d); white-space:nowrap; text-align:right; font-size:.95rem; }
+            .os-total .lbl { display:block; font-size:.7rem; color:var(--spht-muted); font-weight:500; }
+
+            .os-chev {
+                width:28px; height:28px; border-radius:50%;
+                display:inline-flex; align-items:center; justify-content:center;
+                background:#f1f5f9; color:#475569;
+                transition: transform .2s ease, background .15s;
+            }
+            .order-item[open] .os-chev { transform: rotate(180deg); background: var(--brand-50, #ecfdf5); color: var(--spht-green-dark, #15803d); }
+
+            /* Body yang muncul saat di-expand */
+            .order-body { border-top:1px solid #eef2f7; }
+
+            /* Product list rows */
             .order-line { display:flex; align-items:center; gap:.85rem; padding:.65rem 1.1rem; }
             .order-line + .order-line { border-top:1px dashed #eef2f7; }
-            .order-line .thumb { width:52px; height:52px; border-radius:.55rem; object-fit:cover; background:#f6f8fa; border:1px solid #e5e7eb; flex-shrink:0; }
+            .order-line .thumb { width:48px; height:48px; border-radius:.55rem; object-fit:cover; background:#f6f8fa; border:1px solid #e5e7eb; flex-shrink:0; }
             .order-line .name { font-weight:500; color:#1f2937; }
             .order-line .muted { color:#94a3b8; font-style:italic; }
             .order-line .qty  { color:var(--spht-muted); font-size:.85rem; }
             .order-line .sub  { font-weight:600; color:#0f172a; white-space:nowrap; }
 
-            .order-card-foot { display:flex; justify-content:space-between; align-items:center; gap:.75rem; padding:.8rem 1.1rem; background:#fafbfc; border-top:1px solid var(--spht-border); flex-wrap:wrap; }
-            .order-total { font-size:.78rem; color:var(--spht-muted); }
-            .order-total strong { display:block; font-size:1.1rem; color:var(--spht-green-dark); }
+            /* Footer: total + tombol aksi */
+            .order-foot { display:flex; justify-content:space-between; align-items:center; gap:.75rem; padding:.8rem 1.1rem; background:#fafbfc; border-top:1px solid var(--spht-border); flex-wrap:wrap; }
+
+            /* Method chip */
+            .method-chip { display:inline-flex; align-items:center; gap:.25rem; padding:.18rem .55rem; border-radius:999px; background:#eef2f7; color:#334155; font-size:.7rem; text-transform:uppercase; letter-spacing:.03em; font-weight:600; }
+
+            /* Status bar / stepper */
+            .order-progress { display:flex; align-items:flex-start; gap:0; padding:1rem 1.1rem .65rem; background:#fff; }
+            .op-step { flex:1; display:flex; flex-direction:column; align-items:center; gap:.4rem; position:relative; min-width:0; }
+            .op-step .dot {
+                width:34px; height:34px; border-radius:50%;
+                display:inline-flex; align-items:center; justify-content:center;
+                background:#e2e8f0; color:#94a3b8;
+                border:2px solid transparent; font-size:1rem;
+                transition: background .2s, color .2s, border-color .2s, transform .2s;
+                z-index:1; flex-shrink:0;
+            }
+            .op-step .lbl { font-size:.74rem; color:#94a3b8; font-weight:600; text-align:center; line-height:1.2; }
+            .op-step + .op-step::before {
+                content:""; position:absolute; left:-50%; top:16px;
+                width:100%; height:3px; background:#e2e8f0; z-index:0;
+            }
+            .op-step.is-done .dot      { background:var(--spht-green, #16a34a); color:#fff; }
+            .op-step.is-done + .op-step::before,
+            .op-step.is-active + .op-step::before { background:var(--spht-green, #16a34a); }
+            .op-step.is-done .lbl      { color:#0f172a; }
+            .op-step.is-active .dot    { background:#fff; border-color:var(--spht-green, #16a34a); color:var(--spht-green, #16a34a); transform: scale(1.06); box-shadow: 0 0 0 6px rgba(22,163,74,.12); }
+            .op-step.is-active .lbl    { color:var(--spht-green-dark, #15803d); font-weight:700; }
+            .order-progress.is-canceled { background:#fef2f2; }
+            .order-progress.is-canceled .op-step .dot { background:#fee2e2; color:#b91c1c; border:none; }
+            .order-progress.is-canceled .op-step .lbl { color:#7f1d1d; }
+            .order-progress.is-canceled .op-step + .op-step::before { background:#fecaca; }
+
+            /* Mobile: lebih ringkas */
+            @media (max-width: 575.98px){
+                .order-summary { grid-template-columns: 1fr auto 24px; gap:.5rem; }
+                .os-status { grid-column: 1 / -1; }
+                .op-step .lbl { font-size:.66rem; }
+            }
         </style>
     @endpush
 
@@ -56,17 +139,58 @@
     </div>
 
     @forelse ($items as $order)
-        <div class="order-card mb-3">
-            <div class="order-card-head">
-                <div class="left">
-                    <div>
-                        <div class="order-code">{{ $order->code }}</div>
-                        <span class="order-date"><i class="ti ti-calendar me-1"></i>{{ $order->created_at->format('d M Y · H:i') }}</span>
-                    </div>
-                    <span class="badge {{ $order->status->badgeClass() }} ms-2">{{ $order->status->customerLabel() }}</span>
+        @php $current = $stepIndex($order->status); @endphp
+        <details class="order-item">
+            <summary class="order-summary">
+                <div class="os-meta">
+                    <div class="code">{{ $order->code }}</div>
+                    <div class="date"><i class="ti ti-calendar me-1"></i>{{ $order->created_at->translatedFormat('d M Y · H:i') }}</div>
                 </div>
-                <div class="right">
-                    @if ($order->metode_pembayaran)
+                <div class="os-status">
+                    <span class="badge {{ $order->status->badgeClass() }}">{{ $order->status->customerLabel() }}</span>
+                </div>
+                <div class="os-total">
+                    <span class="lbl">Total</span>
+                    Rp {{ number_format($order->total_harga, 0, ',', '.') }}
+                </div>
+                <span class="os-chev"><i class="ti ti-chevron-down"></i></span>
+            </summary>
+
+            <div class="order-body">
+                {{-- Status bar --}}
+                <div class="order-progress {{ $order->status === OrderStatus::Batal ? 'is-canceled' : '' }}">
+                    @if ($order->status === OrderStatus::Batal)
+                        @php $cancelSteps = [['x', 'Dibatalkan'], ['ban', 'Order tidak diproses']]; @endphp
+                        @foreach ($cancelSteps as [$ic, $lbl])
+                            <div class="op-step">
+                                <span class="dot"><i class="ti ti-{{ $ic }}"></i></span>
+                                <span class="lbl">{{ $lbl }}</span>
+                            </div>
+                        @endforeach
+                    @else
+                        @foreach ($steps as $idx => [$st, $label, $icon])
+                            @php
+                                $stepNum  = $idx + 1;
+                                $isDone   = $stepNum < $current;
+                                $isActive = $stepNum === $current;
+                            @endphp
+                            <div class="op-step {{ $isDone ? 'is-done' : '' }} {{ $isActive ? 'is-active' : '' }}">
+                                <span class="dot">
+                                    @if ($isDone)
+                                        <i class="ti ti-check"></i>
+                                    @else
+                                        <i class="ti ti-{{ $icon }}"></i>
+                                    @endif
+                                </span>
+                                <span class="lbl">{{ $label }}</span>
+                            </div>
+                        @endforeach
+                    @endif
+                </div>
+
+                {{-- Method chip --}}
+                @if ($order->metode_pembayaran)
+                    <div class="px-3 pt-2 pb-1">
                         <span class="method-chip">
                             <i class="ti ti-{{ match($order->metode_pembayaran) {
                                 'transfer' => 'building-bank',
@@ -76,65 +200,75 @@
                             } }}"></i>
                             {{ $order->metode_pembayaran }}
                         </span>
-                    @endif
-                </div>
-            </div>
-
-            <div class="order-card-body">
-                @foreach ($order->items as $i)
-                    <div class="order-line">
-                        <img class="thumb" src="{{ $i->product?->image_url ?? asset('img/placeholder.png') }}"
-                             alt="{{ $i->product?->nama ?? 'produk dihapus' }}" loading="lazy" decoding="async">
-                        <div class="flex-grow-1 text-truncate">
-                            <div class="name text-truncate">
-                                @if ($i->product)
-                                    {{ $i->product->nama }}
-                                @else
-                                    <span class="muted">[produk dihapus]</span>
-                                @endif
-                            </div>
-                            <div class="qty">{{ $i->jumlah }} × Rp {{ number_format($i->harga, 0, ',', '.') }}</div>
-                        </div>
-                        <div class="sub">Rp {{ number_format($i->harga * $i->jumlah, 0, ',', '.') }}</div>
                     </div>
-                @endforeach
-            </div>
+                @endif
 
-            <div class="order-card-foot">
-                <div class="order-total">
-                    Total Pesanan
-                    <strong>Rp {{ number_format($order->total_harga, 0, ',', '.') }}</strong>
+                {{-- Daftar produk --}}
+                <div>
+                    @foreach ($order->items as $i)
+                        <div class="order-line">
+                            <img class="thumb" src="{{ $i->product?->image_url ?? asset('img/placeholder.png') }}"
+                                 alt="{{ $i->product?->nama ?? 'produk dihapus' }}" loading="lazy" decoding="async">
+                            <div class="flex-grow-1 text-truncate">
+                                <div class="name text-truncate">
+                                    @if ($i->product)
+                                        {{ $i->product->nama }}
+                                    @else
+                                        <span class="muted">[produk dihapus]</span>
+                                    @endif
+                                </div>
+                                <div class="qty">{{ $i->jumlah }} × Rp {{ number_format($i->harga, 0, ',', '.') }}</div>
+                            </div>
+                            <div class="sub">Rp {{ number_format($i->harga * $i->jumlah, 0, ',', '.') }}</div>
+                        </div>
+                    @endforeach
                 </div>
-                <div class="d-flex gap-2 flex-wrap align-items-center">
-                    @if ($order->status === \App\Enums\OrderStatus::Pending && $order->metode_pembayaran === 'midtrans' && ! $order->isPaymentExpired())
-                        @if ($order->expires_at)
-                            <span class="text-secondary small d-inline-flex align-items-center" data-pay-countdown="{{ $order->expires_at->toIso8601String() }}">
-                                <i class="ti ti-clock me-1"></i><span data-countdown-text>—</span>
-                            </span>
+
+                {{-- Footer aksi --}}
+                <div class="order-foot">
+                    <div class="text-secondary small">
+                        @if ($order->status === OrderStatus::Pending && $order->isPaymentExpired())
+                            <span class="text-danger"><i class="ti ti-clock-x me-1"></i>Batas waktu pembayaran terlewat</span>
+                        @elseif ($order->status === OrderStatus::Selesai)
+                            <i class="ti ti-circle-check text-success me-1"></i>Pesanan telah diterima
+                        @elseif ($order->status === OrderStatus::Dikirim)
+                            <i class="ti ti-truck-delivery text-primary me-1"></i>Pesanan sedang dalam pengiriman
+                        @elseif ($order->status === OrderStatus::Dibayar)
+                            <i class="ti ti-package text-info me-1"></i>Penjual sedang menyiapkan pesanan
                         @endif
-                        <form action="{{ route('pelanggan.pembayaran.sync', $order) }}" method="POST" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-outline-secondary btn-sm">
-                                <i class="ti ti-refresh me-1"></i> Cek Status
-                            </button>
-                        </form>
-                        <a href="{{ route('pelanggan.pembayaran.show', $order) }}" class="btn btn-success btn-sm">
-                            <i class="ti ti-credit-card me-1"></i> Lanjutkan Bayar
-                        </a>
-                    @else
-                        @if ($order->status === \App\Enums\OrderStatus::Pending && $order->isPaymentExpired())
-                            <span class="text-danger small d-inline-flex align-items-center">
-                                <i class="ti ti-clock-x me-1"></i> Batas waktu terlewat
-                            </span>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        @if ($order->status === OrderStatus::Pending && $order->metode_pembayaran === 'midtrans' && ! $order->isPaymentExpired())
+                            @if ($order->expires_at)
+                                <span class="text-secondary small d-inline-flex align-items-center" data-pay-countdown="{{ $order->expires_at->toIso8601String() }}">
+                                    <i class="ti ti-clock me-1"></i><span data-countdown-text>—</span>
+                                </span>
+                            @endif
+                            <form action="{{ route('pelanggan.pembayaran.sync', $order) }}" method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                    <i class="ti ti-refresh me-1"></i> Cek Status
+                                </button>
+                            </form>
+                            <a href="{{ route('pelanggan.pembayaran.show', $order) }}" class="btn btn-success btn-sm">
+                                <i class="ti ti-credit-card me-1"></i> Lanjutkan Bayar
+                            </a>
+                        @elseif ($order->status === OrderStatus::Dikirim)
+                            <form action="{{ route('pelanggan.pesanan.diterima', $order) }}" method="POST" class="d-inline"
+                                  data-confirm="Pastikan barang sudah Anda terima dan dalam kondisi baik. Konfirmasi ini tidak dapat dibatalkan."
+                                  data-confirm-title="Konfirmasi Pesanan Diterima?"
+                                  data-confirm-icon="success"
+                                  data-confirm-button="Ya, sudah saya terima">
+                                @csrf
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="ti ti-package-import me-1"></i> Pesanan Diterima
+                                </button>
+                            </form>
                         @endif
-                        <button type="button" class="btn btn-outline-success btn-sm"
-                                data-bs-toggle="modal" data-bs-target="#detail-order-{{ $order->id }}">
-                            Detail <i class="ti ti-arrow-right ms-1"></i>
-                        </button>
-                    @endif
+                    </div>
                 </div>
             </div>
-        </div>
+        </details>
     @empty
         <div class="card">
             <div class="card-body text-center py-5">
@@ -156,91 +290,6 @@
             {{ $items->links() }}
         </div>
     @endif
-
-    @foreach ($items as $order)
-        <div class="modal modal-blur fade" id="detail-order-{{ $order->id }}" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <div>
-                            <h5 class="modal-title mb-0">Detail Pesanan</h5>
-                            <div class="text-secondary small">{{ $order->code }} &middot; {{ $order->created_at->format('d M Y · H:i') }}</div>
-                        </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="d-flex flex-wrap gap-2 mb-3">
-                            <span class="badge {{ $order->status->badgeClass() }}">{{ $order->status->label() }}</span>
-                            @if ($order->metode_pembayaran)
-                                <span class="badge bg-secondary-lt"><i class="ti ti-credit-card me-1"></i>{{ ucfirst($order->metode_pembayaran) }}</span>
-                            @endif
-                        </div>
-
-                        <h6 class="text-uppercase text-secondary small fw-bold mb-2">Produk</h6>
-                        <div class="border rounded mb-3">
-                            @foreach ($order->items as $i)
-                                <div class="d-flex align-items-center gap-3 p-2 {{ ! $loop->last ? 'border-bottom' : '' }}">
-                                    <img src="{{ $i->product?->image_url ?? asset('img/placeholder.png') }}"
-                                         alt="" style="width:44px;height:44px;object-fit:cover;border-radius:.5rem;background:#f6f8fa"
-                                         loading="lazy">
-                                    <div class="flex-fill">
-                                        <div class="fw-medium">
-                                            @if ($i->product)
-                                                {{ $i->product->nama }}
-                                            @else
-                                                <span class="text-secondary fst-italic">[produk dihapus]</span>
-                                            @endif
-                                        </div>
-                                        <div class="text-secondary small">{{ $i->jumlah }} × Rp {{ number_format($i->harga, 0, ',', '.') }}</div>
-                                    </div>
-                                    <div class="fw-semibold">Rp {{ number_format($i->harga * $i->jumlah, 0, ',', '.') }}</div>
-                                </div>
-                            @endforeach
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-sm-6">
-                                <h6 class="text-uppercase text-secondary small fw-bold mb-2">Alamat Pengiriman</h6>
-                                <div class="border rounded p-3 small">
-                                    <div class="fw-medium">{{ $order->user->name }}</div>
-                                    <div class="text-secondary">{{ $order->user->no_hp ?? '—' }}</div>
-                                    <div class="text-secondary mt-1">{{ $order->user->alamat ?? '—' }}</div>
-                                </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <h6 class="text-uppercase text-secondary small fw-bold mb-2">Ringkasan</h6>
-                                <div class="border rounded p-3">
-                                    <div class="d-flex justify-content-between small mb-1">
-                                        <span class="text-secondary">Subtotal</span>
-                                        <span>Rp {{ number_format($order->total_harga, 0, ',', '.') }}</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between small mb-1">
-                                        <span class="text-secondary">Ongkir</span>
-                                        <span>Rp 0</span>
-                                    </div>
-                                    <hr class="my-2">
-                                    <div class="d-flex justify-content-between fw-bold">
-                                        <span>Total</span>
-                                        <span class="text-success">Rp {{ number_format($order->total_harga, 0, ',', '.') }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">Tutup</button>
-                        @if ($order->status->value === 'pending' && ! $order->isPaymentExpired())
-                            <a href="{{ route('pelanggan.pembayaran.show', $order) }}" class="btn btn-success">
-                                <i class="ti ti-credit-card me-1"></i> Bayar Sekarang
-                            </a>
-                        @elseif ($order->status->value === 'pending' && $order->isPaymentExpired())
-                            <span class="text-danger small me-2"><i class="ti ti-clock-x me-1"></i>Batas waktu pembayaran terlewat</span>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endforeach
 
     @push('scripts')
         <script>

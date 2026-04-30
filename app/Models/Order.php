@@ -79,6 +79,22 @@ class Order extends Model
         return true;
     }
 
+    /**
+     * Bulk-cancel semua order Pending yang sudah melewati expires_at.
+     * Dipanggil dari controller index pesanan supaya status terupdate seketika
+     * (tanpa harus menunggu scheduled command jalan tiap menit).
+     *
+     * @return int Jumlah baris yang diubah.
+     */
+    public static function expireOverdue(): int
+    {
+        return static::query()
+            ->where('status', OrderStatus::Pending)
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now())
+            ->update(['status' => OrderStatus::Batal]);
+    }
+
     protected function code(): Attribute
     {
         return Attribute::get(fn () => 'INV-'

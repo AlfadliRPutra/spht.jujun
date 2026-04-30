@@ -74,15 +74,28 @@
                                         data-bs-toggle="modal" data-bs-target="#detail-order-{{ $order->id }}">
                                     <i class="ti ti-eye"></i>
                                 </button>
+                                @if (in_array($order->status, [OrderStatus::Dibayar, OrderStatus::Dikirim, OrderStatus::Selesai], true))
+                                    <a href="{{ route('petani.pesanan.resi', $order) }}" target="_blank" rel="noopener"
+                                       class="btn btn-sm btn-outline-success" title="Cetak resi pengiriman">
+                                        <i class="ti ti-printer"></i>
+                                    </a>
+                                @endif
                                 @if ($order->status === OrderStatus::Dibayar)
                                     <form action="{{ route('petani.pesanan.ship', $order) }}" method="POST" class="d-inline"
-                                          onsubmit="return confirm('Tandai pesanan #{{ $order->id }} sebagai dikirim?');">
+                                          data-confirm="Pesanan #{{ $order->id }} akan ditandai sebagai sudah dikirim. Lanjutkan?"
+                                          data-confirm-title="Kirim Pesanan?"
+                                          data-confirm-icon="info"
+                                          data-confirm-button="Ya, tandai dikirim"
+                                          data-confirm-color="#0ea5e9">
                                         @csrf
                                         <button class="btn btn-sm btn-primary"><i class="ti ti-truck-delivery me-1"></i> Kirim</button>
                                     </form>
                                 @elseif ($order->status === OrderStatus::Dikirim)
                                     <form action="{{ route('petani.pesanan.complete', $order) }}" method="POST" class="d-inline"
-                                          onsubmit="return confirm('Selesaikan pesanan #{{ $order->id }}?');">
+                                          data-confirm="Tandai pesanan #{{ $order->id }} sebagai selesai? Stok produk akan dihitung sebagai terjual."
+                                          data-confirm-title="Selesaikan Pesanan?"
+                                          data-confirm-icon="success"
+                                          data-confirm-button="Ya, selesaikan">
                                         @csrf
                                         <button class="btn btn-sm btn-success"><i class="ti ti-circle-check me-1"></i> Selesai</button>
                                     </form>
@@ -200,13 +213,27 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">Tutup</button>
+                        @if (in_array($order->status, [OrderStatus::Dibayar, OrderStatus::Dikirim, OrderStatus::Selesai], true))
+                            <a href="{{ route('petani.pesanan.resi', $order) }}" target="_blank" rel="noopener" class="btn btn-outline-success">
+                                <i class="ti ti-printer me-1"></i> Cetak Resi
+                            </a>
+                        @endif
                         @if ($order->status === OrderStatus::Dibayar)
-                            <form action="{{ route('petani.pesanan.ship', $order) }}" method="POST" class="m-0">
+                            <form action="{{ route('petani.pesanan.ship', $order) }}" method="POST" class="m-0"
+                                  data-confirm="Pesanan #{{ $order->id }} akan ditandai sebagai sudah dikirim. Lanjutkan?"
+                                  data-confirm-title="Kirim Pesanan?"
+                                  data-confirm-icon="info"
+                                  data-confirm-button="Ya, tandai dikirim"
+                                  data-confirm-color="#0ea5e9">
                                 @csrf
                                 <button class="btn btn-primary"><i class="ti ti-truck-delivery me-1"></i> Tandai Dikirim</button>
                             </form>
                         @elseif ($order->status === OrderStatus::Dikirim)
-                            <form action="{{ route('petani.pesanan.complete', $order) }}" method="POST" class="m-0">
+                            <form action="{{ route('petani.pesanan.complete', $order) }}" method="POST" class="m-0"
+                                  data-confirm="Tandai pesanan #{{ $order->id }} sebagai selesai? Stok produk akan dihitung sebagai terjual."
+                                  data-confirm-title="Selesaikan Pesanan?"
+                                  data-confirm-icon="success"
+                                  data-confirm-button="Ya, selesaikan">
                                 @csrf
                                 <button class="btn btn-success"><i class="ti ti-circle-check me-1"></i> Selesaikan</button>
                             </form>
