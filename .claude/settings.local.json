@@ -34,7 +34,11 @@
       "Bash(php -l routes/console.php)",
       "Bash(php -l app/Http/Controllers/Pelanggan/PesananController.php)",
       "Bash(php -l routes/web.php)",
-      "Bash(php -l app/Http/Controllers/Petani/PesananController.php)"
+      "Bash(php -l app/Http/Controllers/Petani/PesananController.php)",
+      "Bash(php -l app/Http/Controllers/Petani/LaporanController.php)",
+      "Bash(php -l resources/views/components/table-toolbar.blade.php)",
+      "Bash(xargs -I {} grep -l \"laporan\" {})",
+      "Bash(xargs -I {} grep -c \"@php\\\\|@forelse\" {})"
     ]
   }
 }

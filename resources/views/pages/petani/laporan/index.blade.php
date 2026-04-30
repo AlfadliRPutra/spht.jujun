@@ -55,7 +55,7 @@
                     <div class="subheader mb-2">Ringkasan Status</div>
                     <div class="d-flex flex-wrap gap-1">
                         @foreach ($statuses as $s)
-                            @php($count = $statusCounts[$s->value] ?? 0)
+                            @php $count = $statusCounts[$s->value] ?? 0; @endphp
                             <span class="badge {{ $s->badgeClass() }}" title="{{ $s->label() }}">
                                 {{ $s->label() }}: {{ $count }}
                             </span>

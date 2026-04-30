@@ -43,12 +43,22 @@ class PesananController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
+        // Hitung jumlah pesanan per-status milik user untuk tabs filter cepat.
+        $statusCounts = $request->user()->orders()
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->all();
+        $totalAll = array_sum($statusCounts);
+
         return view('pages.pelanggan.pesanan.index', [
-            'items'       => $items,
-            'statuses'    => OrderStatus::cases(),
-            'sort'        => $sort,
-            'sortOptions' => $sortOptions,
-            'perPage'     => $perPage,
+            'items'        => $items,
+            'statuses'     => OrderStatus::cases(),
+            'statusCounts' => $statusCounts,
+            'totalAll'     => $totalAll,
+            'sort'         => $sort,
+            'sortOptions'  => $sortOptions,
+            'perPage'      => $perPage,
         ]);
     }
 

@@ -19,140 +19,323 @@
         [OrderStatus::Dikirim, 'Dikirim',        'truck-delivery'],
         [OrderStatus::Selesai, 'Selesai',        'circle-check'],
     ];
+
+    // Status tabs (icon + warna untuk filter cepat).
+    $tabs = [
+        ['key' => null,                       'label' => 'Semua',          'icon' => 'list',           'count' => $totalAll],
+        ['key' => OrderStatus::Pending->value,'label' => 'Menunggu Bayar', 'icon' => 'clock',          'count' => $statusCounts[OrderStatus::Pending->value] ?? 0],
+        ['key' => OrderStatus::Dibayar->value,'label' => 'Dikemas',        'icon' => 'package',        'count' => $statusCounts[OrderStatus::Dibayar->value] ?? 0],
+        ['key' => OrderStatus::Dikirim->value,'label' => 'Dikirim',        'icon' => 'truck-delivery', 'count' => $statusCounts[OrderStatus::Dikirim->value] ?? 0],
+        ['key' => OrderStatus::Selesai->value,'label' => 'Selesai',        'icon' => 'circle-check',   'count' => $statusCounts[OrderStatus::Selesai->value] ?? 0],
+        ['key' => OrderStatus::Batal->value,  'label' => 'Dibatalkan',     'icon' => 'circle-x',       'count' => $statusCounts[OrderStatus::Batal->value] ?? 0],
+    ];
+    $activeStatus = request('status');
 @endphp
 
 <x-layouts.storefront :title="$title" :active="$active">
     @push('styles')
         <style>
-            /* Single list-item per order. Klik header untuk expand. */
+            /* === Header Hero === */
+            .ps-hero {
+                background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%);
+                border:1px solid #d1fae5; border-radius: 14px;
+                padding: 18px 22px; margin-bottom: 16px;
+                display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+            }
+            .ps-hero h1 { margin:0; font-size:1.35rem; font-weight:800; color:#064e3b; letter-spacing:-.01em; }
+            .ps-hero .sub { color:#047857; font-size:.85rem; margin-top:2px; }
+            .ps-hero .ico { width:44px; height:44px; border-radius:12px; background:#fff; color:#16a34a; display:inline-flex; align-items:center; justify-content:center; font-size:1.4rem; box-shadow:0 4px 12px -4px rgba(16,185,129,.3); }
+
+            /* === Status tabs === */
+            .ps-tabs { display:flex; gap:6px; overflow-x:auto; padding:8px 4px; margin: 0 -4px 14px; scrollbar-width: thin; }
+            .ps-tab {
+                display:inline-flex; align-items:center; gap:8px;
+                padding:10px 14px; border-radius:999px;
+                background:#fff; border:1px solid #e2e8f0;
+                color:#475569; font-weight:600; font-size:.85rem;
+                white-space:nowrap; text-decoration:none;
+                transition: all .15s ease;
+                flex-shrink:0;
+            }
+            .ps-tab:hover { background:#f8fafc; border-color:#cbd5e1; color:#0f172a; }
+            .ps-tab.is-active { background:#16a34a; border-color:#16a34a; color:#fff; }
+            .ps-tab.is-active .badge { background:rgba(255,255,255,.25); color:#fff; }
+            .ps-tab .badge { background:#f1f5f9; color:#475569; font-size:.7rem; padding:2px 8px; border-radius:999px; font-weight:700; min-width:20px; }
+            .ps-tab .ti { font-size:1.05rem; }
+
+            /* === Search bar === */
+            .ps-search-wrap {
+                background:#fff; border:1px solid #e2e8f0; border-radius:12px;
+                padding:6px; display:flex; gap:6px; align-items:center; margin-bottom:14px;
+                transition: border-color .15s, box-shadow .15s;
+            }
+            .ps-search-wrap:focus-within { border-color:#16a34a; box-shadow:0 0 0 4px rgba(22,163,74,.1); }
+            .ps-search-wrap .ti-search { color:#94a3b8; margin-left:10px; font-size:1.1rem; }
+            .ps-search-wrap input { border:0; outline:0; flex:1; padding:8px 4px; background:transparent; font-size:.92rem; }
+            .ps-search-wrap input:focus { box-shadow:none; }
+            .ps-search-wrap select { border:0; outline:0; background:#f8fafc; padding:8px 12px; border-radius:8px; font-size:.85rem; color:#475569; cursor:pointer; }
+            .ps-search-wrap button { background:#16a34a; color:#fff; border:0; padding:8px 18px; border-radius:8px; font-weight:600; font-size:.88rem; cursor:pointer; }
+            .ps-search-wrap button:hover { background:#15803d; }
+
+            /* === Order item card === */
             .order-item {
-                background:#fff; border:1px solid var(--spht-border); border-radius: var(--spht-radius);
-                margin-bottom:.6rem; overflow:hidden;
+                background:#fff; border:1px solid #e2e8f0; border-radius:12px;
+                margin-bottom:10px; overflow:hidden;
                 transition: border-color .15s ease, box-shadow .15s ease;
             }
             .order-item:hover { border-color:#cbd5e1; }
-            .order-item[open] { box-shadow: 0 .5rem 1rem rgba(15,23,42,.06); border-color:#cbd5e1; }
+            .order-item[open] { border-color:#16a34a; box-shadow: 0 8px 24px -8px rgba(15,23,42,.08); }
 
-            /* <summary> = baris ringkas. Buang marker bawaan browser. */
+            /* Status accent stripe (4px) */
+            .order-item { position:relative; }
+            .order-item::before {
+                content:""; position:absolute; left:0; top:0; bottom:0; width:4px;
+                background:#cbd5e1; transition: background .15s;
+            }
+            .order-item.s-pending::before { background:#f59e0b; }
+            .order-item.s-dibayar::before { background:#3b82f6; }
+            .order-item.s-dikirim::before { background:#06b6d4; }
+            .order-item.s-selesai::before { background:#16a34a; }
+            .order-item.s-batal::before   { background:#ef4444; }
+
+            /* Summary row */
             .order-summary {
-                display:grid; align-items:center; gap:.85rem;
-                grid-template-columns: minmax(0,1.4fr) auto minmax(120px,auto) 28px;
-                padding:.75rem 1rem; cursor:pointer;
+                display:grid; align-items:center; gap:14px;
+                grid-template-columns: auto minmax(0,1fr) auto auto 32px;
+                padding:14px 18px 14px 22px; cursor:pointer;
                 list-style:none; user-select:none;
             }
             .order-summary::-webkit-details-marker { display:none; }
             .order-summary::marker { content:''; }
             .order-summary:hover { background:#f8fafc; }
 
-            .os-meta { min-width:0; }
-            .os-meta .code { font-family:'SF Mono','Menlo',monospace; font-size:.88rem; font-weight:600; color:#0f172a; letter-spacing:.02em; }
-            .os-meta .date { font-size:.75rem; color:var(--spht-muted); margin-top:.1rem; }
+            /* Thumbnail stack */
+            .os-thumbs { display:flex; align-items:center; flex-shrink:0; }
+            .os-thumbs .thumb {
+                width:42px; height:42px; border-radius:10px;
+                object-fit:cover; background:#f6f8fa;
+                border:2px solid #fff; box-shadow:0 0 0 1px #e5e7eb;
+                margin-left:-12px; flex-shrink:0;
+            }
+            .os-thumbs .thumb:first-child { margin-left:0; }
+            .os-thumbs .more {
+                width:42px; height:42px; border-radius:10px;
+                background:#f1f5f9; color:#475569; font-weight:700; font-size:.78rem;
+                border:2px solid #fff; box-shadow:0 0 0 1px #e5e7eb;
+                display:inline-flex; align-items:center; justify-content:center;
+                margin-left:-12px;
+            }
 
-            .os-total { font-weight:700; color:var(--spht-green-dark, #15803d); white-space:nowrap; text-align:right; font-size:.95rem; }
-            .os-total .lbl { display:block; font-size:.7rem; color:var(--spht-muted); font-weight:500; }
+            .os-info { min-width:0; }
+            .os-info .product-summary { font-weight:600; color:#0f172a; font-size:.92rem; margin-bottom:3px;
+                overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+            }
+            .os-info .meta { font-size:.76rem; color:#94a3b8; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+            .os-info .meta .code { font-family:'SF Mono','Menlo',monospace; color:#64748b; }
+            .os-info .meta .dot { color:#cbd5e1; }
+
+            .os-status { display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0; }
+            .os-status .badge { font-weight:700; padding:5px 10px; font-size:.72rem; }
+            .os-status .countdown { font-size:.7rem; color:#dc2626; font-weight:600; display:inline-flex; align-items:center; gap:3px; }
+
+            .os-total { text-align:right; flex-shrink:0; }
+            .os-total .lbl { display:block; font-size:.7rem; color:#94a3b8; font-weight:500; margin-bottom:2px; }
+            .os-total .val { font-weight:700; color:#15803d; font-size:1rem; white-space:nowrap; }
 
             .os-chev {
-                width:28px; height:28px; border-radius:50%;
+                width:32px; height:32px; border-radius:50%;
                 display:inline-flex; align-items:center; justify-content:center;
                 background:#f1f5f9; color:#475569;
-                transition: transform .2s ease, background .15s;
+                transition: transform .25s ease, background .15s, color .15s;
+                flex-shrink:0;
             }
-            .order-item[open] .os-chev { transform: rotate(180deg); background: var(--brand-50, #ecfdf5); color: var(--spht-green-dark, #15803d); }
+            .order-item[open] .os-chev { transform: rotate(180deg); background:#dcfce7; color:#15803d; }
 
-            /* Body yang muncul saat di-expand */
-            .order-body { border-top:1px solid #eef2f7; }
+            /* Body */
+            .order-body { border-top:1px solid #f1f5f9; }
 
-            /* Product list rows */
-            .order-line { display:flex; align-items:center; gap:.85rem; padding:.65rem 1.1rem; }
-            .order-line + .order-line { border-top:1px dashed #eef2f7; }
-            .order-line .thumb { width:48px; height:48px; border-radius:.55rem; object-fit:cover; background:#f6f8fa; border:1px solid #e5e7eb; flex-shrink:0; }
-            .order-line .name { font-weight:500; color:#1f2937; }
+            .order-line { display:flex; align-items:center; gap:14px; padding:12px 22px; }
+            .order-line + .order-line { border-top:1px dashed #f1f5f9; }
+            .order-line .thumb { width:48px; height:48px; border-radius:10px; object-fit:cover; background:#f6f8fa; border:1px solid #e5e7eb; flex-shrink:0; }
+            .order-line .name { font-weight:600; color:#0f172a; font-size:.9rem; }
             .order-line .muted { color:#94a3b8; font-style:italic; }
-            .order-line .qty  { color:var(--spht-muted); font-size:.85rem; }
-            .order-line .sub  { font-weight:600; color:#0f172a; white-space:nowrap; }
+            .order-line .qty  { color:#64748b; font-size:.8rem; }
+            .order-line .sub  { font-weight:700; color:#0f172a; white-space:nowrap; font-size:.92rem; }
 
-            /* Footer: total + tombol aksi */
-            .order-foot { display:flex; justify-content:space-between; align-items:center; gap:.75rem; padding:.8rem 1.1rem; background:#fafbfc; border-top:1px solid var(--spht-border); flex-wrap:wrap; }
+            /* Address card di expanded */
+            .order-addr {
+                margin: 12px 22px; padding:12px 14px;
+                background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px;
+                display:flex; gap:10px; align-items:flex-start;
+            }
+            .order-addr .ico { color:#16a34a; flex-shrink:0; margin-top:2px; }
+            .order-addr .name { font-weight:600; font-size:.88rem; color:#0f172a; }
+            .order-addr .text { font-size:.82rem; color:#64748b; line-height:1.45; margin-top:2px; }
 
-            /* Method chip */
-            .method-chip { display:inline-flex; align-items:center; gap:.25rem; padding:.18rem .55rem; border-radius:999px; background:#eef2f7; color:#334155; font-size:.7rem; text-transform:uppercase; letter-spacing:.03em; font-weight:600; }
+            /* Footer aksi */
+            .order-foot { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 22px; background:#fafbfc; border-top:1px solid #f1f5f9; flex-wrap:wrap; }
+            .order-foot .status-msg { font-size:.85rem; color:#475569; display:inline-flex; align-items:center; gap:6px; }
+            .order-foot .actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+            .order-foot .countdown-tag {
+                background:#fef3c7; color:#92400e; padding:5px 10px; border-radius:8px;
+                font-size:.78rem; font-weight:600; display:inline-flex; align-items:center; gap:5px;
+            }
+            .order-foot .countdown-tag.is-warn { background:#fee2e2; color:#991b1b; }
 
-            /* Status bar / stepper */
-            .order-progress { display:flex; align-items:flex-start; gap:0; padding:1rem 1.1rem .65rem; background:#fff; }
-            .op-step { flex:1; display:flex; flex-direction:column; align-items:center; gap:.4rem; position:relative; min-width:0; }
+            /* Status bar (stepper) */
+            .order-progress { display:flex; align-items:flex-start; gap:0; padding:18px 22px 10px; background:#fff; }
+            .op-step { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; position:relative; min-width:0; }
             .op-step .dot {
-                width:34px; height:34px; border-radius:50%;
+                width:36px; height:36px; border-radius:50%;
                 display:inline-flex; align-items:center; justify-content:center;
                 background:#e2e8f0; color:#94a3b8;
-                border:2px solid transparent; font-size:1rem;
-                transition: background .2s, color .2s, border-color .2s, transform .2s;
+                border:2px solid transparent; font-size:1.05rem;
+                transition: background .25s, color .25s, border-color .25s, transform .25s, box-shadow .25s;
                 z-index:1; flex-shrink:0;
             }
             .op-step .lbl { font-size:.74rem; color:#94a3b8; font-weight:600; text-align:center; line-height:1.2; }
             .op-step + .op-step::before {
-                content:""; position:absolute; left:-50%; top:16px;
+                content:""; position:absolute; left:-50%; top:17px;
                 width:100%; height:3px; background:#e2e8f0; z-index:0;
             }
-            .op-step.is-done .dot      { background:var(--spht-green, #16a34a); color:#fff; }
+            .op-step.is-done .dot      { background:#16a34a; color:#fff; }
             .op-step.is-done + .op-step::before,
-            .op-step.is-active + .op-step::before { background:var(--spht-green, #16a34a); }
-            .op-step.is-done .lbl      { color:#0f172a; }
-            .op-step.is-active .dot    { background:#fff; border-color:var(--spht-green, #16a34a); color:var(--spht-green, #16a34a); transform: scale(1.06); box-shadow: 0 0 0 6px rgba(22,163,74,.12); }
-            .op-step.is-active .lbl    { color:var(--spht-green-dark, #15803d); font-weight:700; }
+            .op-step.is-active + .op-step::before { background:#16a34a; }
+            .op-step.is-done .lbl      { color:#15803d; }
+            .op-step.is-active .dot    { background:#fff; border-color:#16a34a; color:#16a34a; transform: scale(1.1); box-shadow: 0 0 0 6px rgba(22,163,74,.15); }
+            .op-step.is-active .lbl    { color:#15803d; font-weight:700; }
             .order-progress.is-canceled { background:#fef2f2; }
             .order-progress.is-canceled .op-step .dot { background:#fee2e2; color:#b91c1c; border:none; }
             .order-progress.is-canceled .op-step .lbl { color:#7f1d1d; }
             .order-progress.is-canceled .op-step + .op-step::before { background:#fecaca; }
 
-            /* Mobile: lebih ringkas */
-            @media (max-width: 575.98px){
-                .order-summary { grid-template-columns: 1fr auto 24px; gap:.5rem; }
-                .os-status { grid-column: 1 / -1; }
+            /* Empty state */
+            .ps-empty {
+                background:#fff; border:1px dashed #cbd5e1; border-radius:14px;
+                text-align:center; padding:48px 24px;
+            }
+            .ps-empty .ico { width:80px; height:80px; border-radius:50%; background:#f0fdf4; color:#16a34a; font-size:2.5rem; margin:0 auto 14px; display:inline-flex; align-items:center; justify-content:center; }
+            .ps-empty h3 { color:#0f172a; font-weight:700; margin-bottom:6px; }
+            .ps-empty p { color:#64748b; margin-bottom:18px; }
+
+            /* Mobile */
+            @media (max-width: 767.98px){
+                .order-summary { grid-template-columns: auto minmax(0,1fr) 28px; gap:10px; padding:12px 14px 12px 18px; }
+                .os-status, .os-total { grid-column: 2 / -2; flex-direction:row; justify-content:space-between; align-items:center; }
+                .os-total { margin-top:2px; }
+                .os-thumbs .thumb, .os-thumbs .more { width:40px; height:40px; }
+                .order-progress { padding:14px 14px 6px; }
                 .op-step .lbl { font-size:.66rem; }
+                .order-line { padding:10px 14px; }
+                .order-foot, .order-addr { padding-left:14px; padding-right:14px; }
+                .order-addr { margin-left:14px; margin-right:14px; }
             }
         </style>
     @endpush
 
-    <div class="card mb-3">
-        <div class="card-header">
-            <h3 class="card-title">Riwayat Pesanan ({{ $items->total() }})</h3>
+    {{-- HERO HEADER --}}
+    <div class="ps-hero">
+        <div class="d-flex align-items-center gap-3">
+            <span class="ico"><i class="ti ti-receipt"></i></span>
+            <div>
+                <h1>Pesanan Saya</h1>
+                <div class="sub">Pantau status pesanan, lanjutkan pembayaran, atau konfirmasi penerimaan barang.</div>
+            </div>
         </div>
-
-        <x-table-toolbar
-            :action="route('pelanggan.pesanan.index')"
-            placeholder="Cari nomor order..."
-            :sort-options="$sortOptions"
-            :sort="$sort"
-            :per-page="$perPage">
-            <x-slot name="filters">
-                <div>
-                    <label class="form-label small text-secondary mb-1">Status</label>
-                    <select name="status" class="form-select" style="min-width:170px">
-                        <option value="">Semua</option>
-                        @foreach ($statuses as $s)
-                            <option value="{{ $s->value }}" @selected(request('status') === $s->value)>{{ $s->customerLabel() }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            </x-slot>
-        </x-table-toolbar>
+        <a href="{{ route('pelanggan.katalog.index') }}" class="btn btn-success">
+            <i class="ti ti-shopping-cart me-1"></i> Belanja Lagi
+        </a>
     </div>
 
+    {{-- STATUS TABS --}}
+    <div class="ps-tabs">
+        @foreach ($tabs as $t)
+            @php
+                $url = $t['key']
+                    ? request()->fullUrlWithQuery(['status' => $t['key'], 'page' => null])
+                    : request()->fullUrlWithQuery(['status' => null, 'page' => null]);
+                $isActive = (string) $activeStatus === (string) $t['key'];
+            @endphp
+            <a href="{{ $url }}" class="ps-tab {{ $isActive ? 'is-active' : '' }}">
+                <i class="ti ti-{{ $t['icon'] }}"></i>
+                <span>{{ $t['label'] }}</span>
+                <span class="badge">{{ $t['count'] }}</span>
+            </a>
+        @endforeach
+    </div>
+
+    {{-- SEARCH + SORT --}}
+    <form method="GET" action="{{ route('pelanggan.pesanan.index') }}" class="ps-search-wrap">
+        @if ($activeStatus)
+            <input type="hidden" name="status" value="{{ $activeStatus }}">
+        @endif
+        <i class="ti ti-search"></i>
+        <input type="search" name="q" placeholder="Cari nomor pesanan..." value="{{ request('q') }}">
+        <select name="sort" onchange="this.form.submit()">
+            @foreach ($sortOptions as $key => $label)
+                <option value="{{ $key }}" @selected($sort === $key)>{{ $label }}</option>
+            @endforeach
+        </select>
+        <button type="submit"><i class="ti ti-filter me-1"></i>Cari</button>
+    </form>
+
     @forelse ($items as $order)
-        @php $current = $stepIndex($order->status); @endphp
-        <details class="order-item">
+        @php
+            $current   = $stepIndex($order->status);
+            $statusKey = $order->status->value;
+            $allItems  = $order->items;
+            $thumbItems = $allItems->take(3);
+            $moreCount  = max(0, $allItems->count() - 3);
+            $firstName  = $allItems->first()?->product?->nama ?? 'Produk';
+            $totalQty   = $allItems->sum('jumlah');
+        @endphp
+        <details class="order-item s-{{ $statusKey }}">
             <summary class="order-summary">
-                <div class="os-meta">
-                    <div class="code">{{ $order->code }}</div>
-                    <div class="date"><i class="ti ti-calendar me-1"></i>{{ $order->created_at->translatedFormat('d M Y · H:i') }}</div>
+                {{-- Thumbnails --}}
+                <div class="os-thumbs">
+                    @foreach ($thumbItems as $i)
+                        <img class="thumb" src="{{ $i->product?->image_url ?? asset('img/placeholder.png') }}"
+                             alt="{{ $i->product?->nama ?? 'produk' }}" loading="lazy" decoding="async">
+                    @endforeach
+                    @if ($moreCount > 0)
+                        <span class="more">+{{ $moreCount }}</span>
+                    @endif
                 </div>
+
+                {{-- Info: produk + meta --}}
+                <div class="os-info">
+                    <div class="product-summary">
+                        @if ($allItems->count() === 1)
+                            {{ $firstName }}
+                        @else
+                            {{ $firstName }} <span class="text-secondary fw-normal">+ {{ $allItems->count() - 1 }} lainnya</span>
+                        @endif
+                    </div>
+                    <div class="meta">
+                        <span class="code">{{ $order->code }}</span>
+                        <span class="dot">·</span>
+                        <span><i class="ti ti-clock me-1"></i>{{ $order->created_at->diffForHumans() }}</span>
+                        <span class="dot">·</span>
+                        <span>{{ $totalQty }} item</span>
+                    </div>
+                </div>
+
+                {{-- Status --}}
                 <div class="os-status">
                     <span class="badge {{ $order->status->badgeClass() }}">{{ $order->status->customerLabel() }}</span>
+                    @if ($order->status === OrderStatus::Pending && $order->expires_at && ! $order->isPaymentExpired())
+                        <span class="countdown" data-pay-countdown="{{ $order->expires_at->toIso8601String() }}">
+                            <i class="ti ti-clock"></i><span data-countdown-text>—</span>
+                        </span>
+                    @endif
                 </div>
+
+                {{-- Total --}}
                 <div class="os-total">
                     <span class="lbl">Total</span>
-                    Rp {{ number_format($order->total_harga, 0, ',', '.') }}
+                    <span class="val">Rp {{ number_format($order->total_harga, 0, ',', '.') }}</span>
                 </div>
+
                 <span class="os-chev"><i class="ti ti-chevron-down"></i></span>
             </summary>
 
@@ -176,11 +359,7 @@
                             @endphp
                             <div class="op-step {{ $isDone ? 'is-done' : '' }} {{ $isActive ? 'is-active' : '' }}">
                                 <span class="dot">
-                                    @if ($isDone)
-                                        <i class="ti ti-check"></i>
-                                    @else
-                                        <i class="ti ti-{{ $icon }}"></i>
-                                    @endif
+                                    @if ($isDone)<i class="ti ti-check"></i>@else<i class="ti ti-{{ $icon }}"></i>@endif
                                 </span>
                                 <span class="lbl">{{ $label }}</span>
                             </div>
@@ -188,22 +367,7 @@
                     @endif
                 </div>
 
-                {{-- Method chip --}}
-                @if ($order->metode_pembayaran)
-                    <div class="px-3 pt-2 pb-1">
-                        <span class="method-chip">
-                            <i class="ti ti-{{ match($order->metode_pembayaran) {
-                                'transfer' => 'building-bank',
-                                'ewallet'  => 'wallet',
-                                'cod'      => 'cash',
-                                default    => 'credit-card'
-                            } }}"></i>
-                            {{ $order->metode_pembayaran }}
-                        </span>
-                    </div>
-                @endif
-
-                {{-- Daftar produk --}}
+                {{-- Daftar produk lengkap --}}
                 <div>
                     @foreach ($order->items as $i)
                         <div class="order-line">
@@ -211,11 +375,7 @@
                                  alt="{{ $i->product?->nama ?? 'produk dihapus' }}" loading="lazy" decoding="async">
                             <div class="flex-grow-1 text-truncate">
                                 <div class="name text-truncate">
-                                    @if ($i->product)
-                                        {{ $i->product->nama }}
-                                    @else
-                                        <span class="muted">[produk dihapus]</span>
-                                    @endif
+                                    @if ($i->product){{ $i->product->nama }}@else<span class="muted">[produk dihapus]</span>@endif
                                 </div>
                                 <div class="qty">{{ $i->jumlah }} × Rp {{ number_format($i->harga, 0, ',', '.') }}</div>
                             </div>
@@ -224,24 +384,48 @@
                     @endforeach
                 </div>
 
+                {{-- Alamat --}}
+                @if ($order->alamat_pengiriman)
+                    <div class="order-addr">
+                        <i class="ti ti-map-pin ico"></i>
+                        <div>
+                            <div class="name">{{ $order->nama_penerima }} · {{ $order->no_hp_penerima }}</div>
+                            <div class="text">
+                                {{ $order->alamat_pengiriman }}<br>
+                                {{ $order->shipping_district_name }}, {{ $order->shipping_city_name }}, {{ $order->shipping_province_name }}
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 {{-- Footer aksi --}}
                 <div class="order-foot">
-                    <div class="text-secondary small">
+                    <div class="status-msg">
                         @if ($order->status === OrderStatus::Pending && $order->isPaymentExpired())
-                            <span class="text-danger"><i class="ti ti-clock-x me-1"></i>Batas waktu pembayaran terlewat</span>
-                        @elseif ($order->status === OrderStatus::Selesai)
-                            <i class="ti ti-circle-check text-success me-1"></i>Pesanan telah diterima
-                        @elseif ($order->status === OrderStatus::Dikirim)
-                            <i class="ti ti-truck-delivery text-primary me-1"></i>Pesanan sedang dalam pengiriman
+                            <i class="ti ti-clock-x text-danger"></i>
+                            <span class="text-danger">Batas waktu pembayaran terlewat</span>
+                        @elseif ($order->status === OrderStatus::Pending)
+                            <i class="ti ti-clock text-warning"></i>
+                            <span>Selesaikan pembayaran sebelum batas waktu</span>
                         @elseif ($order->status === OrderStatus::Dibayar)
-                            <i class="ti ti-package text-info me-1"></i>Penjual sedang menyiapkan pesanan
+                            <i class="ti ti-package text-info"></i>
+                            <span>Penjual sedang menyiapkan pesanan Anda</span>
+                        @elseif ($order->status === OrderStatus::Dikirim)
+                            <i class="ti ti-truck-delivery text-primary"></i>
+                            <span>Pesanan dalam perjalanan — konfirmasi setelah diterima</span>
+                        @elseif ($order->status === OrderStatus::Selesai)
+                            <i class="ti ti-circle-check text-success"></i>
+                            <span>Pesanan telah diterima</span>
+                        @elseif ($order->status === OrderStatus::Batal)
+                            <i class="ti ti-ban text-danger"></i>
+                            <span>Pesanan dibatalkan</span>
                         @endif
                     </div>
-                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                    <div class="actions">
                         @if ($order->status === OrderStatus::Pending && $order->metode_pembayaran === 'midtrans' && ! $order->isPaymentExpired())
                             @if ($order->expires_at)
-                                <span class="text-secondary small d-inline-flex align-items-center" data-pay-countdown="{{ $order->expires_at->toIso8601String() }}">
-                                    <i class="ti ti-clock me-1"></i><span data-countdown-text>—</span>
+                                <span class="countdown-tag" data-pay-countdown="{{ $order->expires_at->toIso8601String() }}">
+                                    <i class="ti ti-clock"></i><span data-countdown-text>—</span>
                                 </span>
                             @endif
                             <form action="{{ route('pelanggan.pembayaran.sync', $order) }}" method="POST" class="d-inline">
@@ -251,7 +435,7 @@
                                 </button>
                             </form>
                             <a href="{{ route('pelanggan.pembayaran.show', $order) }}" class="btn btn-success btn-sm">
-                                <i class="ti ti-credit-card me-1"></i> Lanjutkan Bayar
+                                <i class="ti ti-credit-card me-1"></i> Bayar Sekarang
                             </a>
                         @elseif ($order->status === OrderStatus::Dikirim)
                             <form action="{{ route('pelanggan.pesanan.diterima', $order) }}" method="POST" class="d-inline"
@@ -264,20 +448,41 @@
                                     <i class="ti ti-package-import me-1"></i> Pesanan Diterima
                                 </button>
                             </form>
+                        @elseif ($order->status === OrderStatus::Selesai)
+                            <a href="{{ route('pelanggan.katalog.index') }}" class="btn btn-outline-success btn-sm">
+                                <i class="ti ti-shopping-cart me-1"></i> Beli Lagi
+                            </a>
                         @endif
                     </div>
                 </div>
             </div>
         </details>
     @empty
-        <div class="card">
-            <div class="card-body text-center py-5">
-                <i class="ti ti-shopping-bag mb-2" style="font-size:2.5rem;color:#cbd5e1"></i>
-                <div class="text-secondary mb-3">Belum ada pesanan.</div>
+        <div class="ps-empty">
+            <span class="ico"><i class="ti ti-shopping-bag"></i></span>
+            <h3>
+                @if ($activeStatus)
+                    Tidak ada pesanan {{ collect($tabs)->firstWhere('key', $activeStatus)['label'] ?? '' }}
+                @else
+                    Belum ada pesanan
+                @endif
+            </h3>
+            <p>
+                @if ($activeStatus)
+                    Coba pilih filter status lain atau lihat semua pesanan Anda.
+                @else
+                    Yuk mulai belanja produk segar dari petani lokal!
+                @endif
+            </p>
+            @if ($activeStatus)
+                <a href="{{ route('pelanggan.pesanan.index') }}" class="btn btn-outline-success">
+                    <i class="ti ti-list me-1"></i> Lihat Semua
+                </a>
+            @else
                 <a href="{{ route('pelanggan.katalog.index') }}" class="btn btn-success">
                     <i class="ti ti-shopping-cart me-1"></i> Mulai Belanja
                 </a>
-            </div>
+            @endif
         </div>
     @endforelse
 
@@ -310,14 +515,14 @@
                         if (! txt) return;
                         if (diff <= 0) {
                             txt.textContent = 'Kedaluwarsa';
-                            el.classList.add('text-danger');
+                            el.classList.add('is-warn');
                             anyExpired = true;
                             return;
                         }
                         const m = Math.floor(diff / 60000);
                         const s = Math.floor((diff % 60000) / 1000);
                         txt.textContent = pad(m) + ':' + pad(s);
-                        if (diff < 60000) el.classList.add('text-danger');
+                        if (diff < 60000) el.classList.add('is-warn');
                     });
                     if (anyExpired) setTimeout(() => window.location.reload(), 1500);
                 }
