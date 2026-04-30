@@ -32,9 +32,17 @@ class NewPasswordController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'token' => ['required'],
-            'email' => ['required', 'email'],
+            'token'    => ['required'],
+            'email'    => ['required', 'email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'email.required'     => 'Email wajib diisi.',
+            'email.email'        => 'Format email tidak valid.',
+            'password.required'  => 'Kata sandi wajib diisi.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
+            'password.min'       => 'Kata sandi minimal :min karakter.',
+            'password.mixed'     => 'Kata sandi harus mengandung huruf besar dan huruf kecil.',
+            'password.symbols'   => 'Kata sandi harus mengandung minimal satu karakter unik (mis. !@#$%).',
         ]);
 
         // Here we will attempt to reset the user's password. If it is successful we

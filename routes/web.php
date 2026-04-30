@@ -30,7 +30,7 @@ Route::prefix('katalog')->name('pelanggan.katalog.')->group(function () {
 Route::post('/midtrans/notification', [PelangganPembayaranController::class, 'notification'])
     ->name('midtrans.notification');
 
-Route::middleware(['auth', 'profile.complete'])->group(function () {
+Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     Route::get('/dashboard', function () {
         if (auth()->user()->role === UserRole::Pelanggan) {
             return redirect()->route('pelanggan.katalog.index');

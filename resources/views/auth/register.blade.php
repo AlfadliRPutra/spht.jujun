@@ -75,6 +75,9 @@
                             </a>
                         </span>
                     </div>
+                    <small class="form-hint">
+                        Minimal 8 karakter, kombinasi huruf besar &amp; kecil, serta minimal satu karakter unik (mis. <code>!@#$%</code>).
+                    </small>
                     @error('password') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                 </div>
 

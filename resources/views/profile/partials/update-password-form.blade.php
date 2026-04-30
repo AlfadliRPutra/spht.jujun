@@ -16,8 +16,9 @@
     <div class="alert alert-info d-flex align-items-start gap-2 mb-4">
         <i class="ti ti-shield-check mt-1"></i>
         <div class="small">
-            Gunakan kombinasi <strong>huruf besar &amp; kecil</strong>, <strong>angka</strong>, dan <strong>simbol</strong>
-            dengan minimal <strong>8 karakter</strong>. Jangan gunakan informasi yang mudah ditebak.
+            Minimal <strong>8 karakter</strong>, kombinasi <strong>huruf besar &amp; kecil</strong>,
+            serta minimal satu <strong>karakter unik</strong> (mis. <code>!@#$%</code>).
+            Jangan gunakan informasi yang mudah ditebak.
         </div>
     </div>
 

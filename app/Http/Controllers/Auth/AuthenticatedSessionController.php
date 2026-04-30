@@ -29,7 +29,13 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $fallback = Auth::user()->role === UserRole::Pelanggan
+        $user = Auth::user();
+
+        if (! $user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
+
+        $fallback = $user->role === UserRole::Pelanggan
             ? route('pelanggan.katalog.index', absolute: false)
             : route('dashboard', absolute: false);
 

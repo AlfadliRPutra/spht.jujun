@@ -7,6 +7,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,5 +32,15 @@ class AppServiceProvider extends ServiceProvider
         Carbon::setLocale('id');
         Date::setLocale('id');
         setlocale(LC_TIME, 'id_ID.UTF-8', 'id_ID', 'Indonesian_Indonesia.1252');
+
+        // Aturan kata sandi: min 8 karakter, kombinasi huruf besar & kecil,
+        // serta minimal satu karakter unik (simbol). Berlaku untuk semua
+        // tempat yang memakai Rules\Password::defaults() — register,
+        // reset password, dan ubah password.
+        Password::defaults(function () {
+            return Password::min(8)
+                ->mixedCase()
+                ->symbols();
+        });
     }
 }

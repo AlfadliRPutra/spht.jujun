@@ -15,7 +15,10 @@
             <div class="mb-3">
                 <label for="password" class="form-label">Kata sandi baru</label>
                 <input id="password" type="password" name="password" class="form-control @error('password') is-invalid @enderror" required autocomplete="new-password">
-                @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                <small class="form-hint">
+                    Minimal 8 karakter, kombinasi huruf besar &amp; kecil, serta minimal satu karakter unik (mis. <code>!@#$%</code>).
+                </small>
+                @error('password') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
             </div>
 
             <div class="mb-3">

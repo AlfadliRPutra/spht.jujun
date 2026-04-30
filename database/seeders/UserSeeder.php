@@ -15,34 +15,35 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
+        // Admin tidak melalui alur verifikasi email — langsung aktif.
         User::updateOrCreate(
             ['email' => 'admin@spht.test'],
             [
-                'name'        => 'Administrator',
-                'password'    => Hash::make('password'),
-                'role'        => 'admin',
-                'no_hp'       => '081200000001',
-                'alamat'      => 'Kantor SPHT Jujun',
-                'is_verified' => true,
+                'name'              => 'Administrator',
+                'password'          => Hash::make('password'),
+                'role'              => 'admin',
+                'no_hp'             => '081200000001',
+                'alamat'            => 'Kantor SPHT Jujun',
+                'email_verified_at' => now(),
             ],
         );
 
         User::updateOrCreate(
             ['email' => 'pelanggan@spht.test'],
             [
-                'name'          => 'Pelanggan Test',
-                'password'      => Hash::make('password'),
-                'role'          => 'pelanggan',
-                'no_hp'         => '081200000002',
-                'alamat'        => 'Jl. Mawar No. 1',
+                'name'              => 'Pelanggan Test',
+                'password'          => Hash::make('password'),
+                'role'              => 'pelanggan',
+                'no_hp'             => '081200000002',
+                'alamat'            => 'Jl. Mawar No. 1',
                 // Wilayah default sebagai contoh siap-checkout untuk demo ongkir.
-                'province_id'   => '12',
-                'province_name' => 'Sumatera Utara',
-                'city_id'       => '1271',
-                'city_name'     => 'Kota Medan',
-                'district_id'   => '127101',
-                'district_name' => 'Medan Tuntungan',
-                'is_verified'   => true,
+                'province_id'       => '12',
+                'province_name'     => 'Sumatera Utara',
+                'city_id'           => '1271',
+                'city_name'         => 'Kota Medan',
+                'district_id'       => '127101',
+                'district_name'     => 'Medan Tuntungan',
+                'email_verified_at' => now(),
             ],
         );
     }

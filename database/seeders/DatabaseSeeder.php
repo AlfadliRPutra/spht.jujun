@@ -13,9 +13,12 @@ class DatabaseSeeder extends Seeder
             RegencySeeder::class,
             DistrictSeeder::class,
             UserSeeder::class,
-            CategorySeeder::class,
             HeroSeeder::class,
             OrderSeeder::class,
         ]);
+
+        // CategorySeeder & ProductSeeder dijalankan manual:
+        //   php artisan db:seed --class=CategorySeeder
+        //   php artisan db:seed --class=ProductSeeder
     }
 }
