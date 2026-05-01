@@ -9,10 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            // Komponen total: total_harga = subtotal_produk + shipping_total - voucher_discount
-            $table->decimal('subtotal_produk',  14, 2)->default(0)->after('total_harga');
-            $table->decimal('shipping_total',   14, 2)->default(0)->after('subtotal_produk');
-            $table->decimal('voucher_discount', 14, 2)->default(0)->after('shipping_total');
+            // Komponen total: total_harga = subtotal_produk + shipping_total
+            $table->decimal('subtotal_produk', 14, 2)->default(0)->after('total_harga');
+            $table->decimal('shipping_total',  14, 2)->default(0)->after('subtotal_produk');
 
             // Snapshot wilayah pembeli pada saat order dibuat.
             $table->string('shipping_province_id',   32)->nullable()->after('alamat_pengiriman');
@@ -28,7 +27,7 @@ return new class extends Migration
     {
         Schema::table('orders', function (Blueprint $table) {
             $table->dropColumn([
-                'subtotal_produk', 'shipping_total', 'voucher_discount',
+                'subtotal_produk', 'shipping_total',
                 'shipping_province_id',   'shipping_province_name',
                 'shipping_city_id',       'shipping_city_name',
                 'shipping_district_id',   'shipping_district_name',

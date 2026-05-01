@@ -18,19 +18,27 @@ class CategorySeeder extends Seeder
             ['nama' => 'Umbi-umbian',     'icon' => 'carrot',           'children' => ['Umbi Manis', 'Umbi Pati']],
         ];
 
+        // Idempoten: re-run seeder tidak melanggar unique('nama').
+        // updateOrCreate dipakai supaya field icon/sort_order/parent_id ikut
+        // tersinkron kalau definisi tree berubah.
         foreach ($tree as $sort => $parent) {
-            $root = Category::create([
-                'nama'       => $parent['nama'],
-                'icon'       => $parent['icon'],
-                'sort_order' => $sort,
-            ]);
+            $root = Category::updateOrCreate(
+                ['nama' => $parent['nama']],
+                [
+                    'icon'       => $parent['icon'],
+                    'sort_order' => $sort,
+                    'parent_id'  => null,
+                ],
+            );
 
             foreach ($parent['children'] as $childSort => $childName) {
-                Category::create([
-                    'parent_id'  => $root->id,
-                    'nama'       => $childName,
-                    'sort_order' => $childSort,
-                ]);
+                Category::updateOrCreate(
+                    ['nama' => $childName],
+                    [
+                        'parent_id'  => $root->id,
+                        'sort_order' => $childSort,
+                    ],
+                );
             }
         }
     }

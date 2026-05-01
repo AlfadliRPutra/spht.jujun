@@ -80,7 +80,6 @@ class PembayaranController extends Controller
                 'user_id'                => $user->id,
                 'subtotal_produk'        => $checkout['subtotal_produk'],
                 'shipping_total'         => $checkout['shipping_total'],
-                'voucher_discount'       => $checkout['voucher_discount'],
                 'total_harga'            => $checkout['grand_total'],
                 'status'                 => OrderStatus::Pending,
                 'metode_pembayaran'      => 'midtrans',
@@ -401,16 +400,6 @@ class PembayaranController extends Controller
                 'price'    => $shipCost,
                 'quantity' => 1,
                 'name'     => mb_strimwidth('Ongkir '.($ship->store_name ?? 'Toko'), 0, 50, ''),
-            ];
-        }
-
-        $voucher = (int) round((float) ($order->voucher_discount ?? 0));
-        if ($voucher > 0) {
-            $items[] = [
-                'id'       => 'VOUCHER-'.$order->id,
-                'price'    => -$voucher,
-                'quantity' => 1,
-                'name'     => 'Diskon Voucher',
             ];
         }
 

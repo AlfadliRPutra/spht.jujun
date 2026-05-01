@@ -22,14 +22,36 @@
         <style>
             .hero-slide { position: relative; height: 360px; border-radius: var(--spht-radius-lg); overflow: hidden; }
             .hero-slide img { width: 100%; height: 100%; object-fit: cover; }
-            .hero-slide::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(15,23,42,.55) 0%, rgba(15,23,42,.1) 70%); }
-            .hero-caption { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 2rem 2.5rem; color: #fff; z-index: 2; max-width: 60%; }
-            .hero-caption h2 { font-weight: 700; font-size: 1.85rem; margin-bottom: .4rem; }
-            .hero-caption p { font-size: .95rem; }
+            /* Dual-layer overlay: horizontal gradient untuk caption area + vertical untuk
+               kontrol carousel di bawah. Cukup gelap di sisi kiri agar judul putih
+               tetap terbaca pada gambar berwarna terang. */
+            .hero-slide::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background:
+                    linear-gradient(90deg, rgba(0,0,0,.78) 0%, rgba(0,0,0,.5) 45%, rgba(0,0,0,.15) 80%),
+                    linear-gradient(180deg, rgba(0,0,0,0) 60%, rgba(0,0,0,.4) 100%);
+                z-index: 1;
+            }
+            .hero-caption {
+                position: absolute; inset: 0; display: flex; flex-direction: column;
+                justify-content: center; padding: 2rem 2.5rem; color: #fff; z-index: 2;
+                max-width: 60%;
+                text-shadow: 0 2px 12px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.4);
+            }
+            .hero-caption h2 {
+                font-weight: 800; font-size: 2rem; margin-bottom: .55rem; letter-spacing: -.01em;
+                line-height: 1.15; color: #fff;
+            }
+            .hero-caption p { font-size: 1rem; opacity: .95; line-height: 1.45; }
+            .hero-caption .btn { text-shadow: none; box-shadow: 0 6px 14px -4px rgba(0,0,0,.4); }
             @media (max-width: 576px) {
-                .hero-slide { height: 240px; }
-                .hero-caption { padding: 1.25rem; max-width: 100%; }
-                .hero-caption h2 { font-size: 1.3rem; }
+                .hero-slide { height: 260px; }
+                .hero-slide::after { background: linear-gradient(180deg, rgba(0,0,0,.3) 0%, rgba(0,0,0,.75) 100%); }
+                .hero-caption { padding: 1.25rem; max-width: 100%; justify-content: flex-end; padding-bottom: 1.5rem; }
+                .hero-caption h2 { font-size: 1.4rem; }
+                .hero-caption p { font-size: .9rem; }
             }
 
             .filter-panel { background: #fff; border: 1px solid var(--spht-border); border-radius: var(--spht-radius); padding: 1rem 1.25rem; }

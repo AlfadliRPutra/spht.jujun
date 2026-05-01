@@ -24,13 +24,12 @@ class CheckoutSummaryService
      *     stores: array<int, array<string, mixed>>,
      *     subtotal_produk: int,
      *     shipping_total: int,
-     *     voucher_discount: int,
      *     grand_total: int,
      *     has_blocked_store: bool,
      *     errors: array<int, string>,
      * }
      */
-    public function build(Cart $cart, User $buyer, ?array $buyerAddressOverride = null, int $voucherDiscount = 0): array
+    public function build(Cart $cart, User $buyer, ?array $buyerAddressOverride = null): array
     {
         $buyerAddress = $buyerAddressOverride ?? $buyer->addressSnapshot();
         $errors       = [];
@@ -149,15 +148,12 @@ class CheckoutSummaryService
             $errors[] = 'Ada toko yang berada di luar kota/kabupaten Anda atau alamat belum lengkap. Hapus dulu produknya dari keranjang untuk melanjutkan.';
         }
 
-        $voucherDiscount = max(0, (int) $voucherDiscount);
-        // Total tidak boleh negatif walaupun voucher melebihi subtotal+ongkir.
-        $grandTotal = max(0, $subtotalProduk + $shippingTotal - $voucherDiscount);
+        $grandTotal = $subtotalProduk + $shippingTotal;
 
         return [
             'stores'            => $stores,
             'subtotal_produk'   => $subtotalProduk,
             'shipping_total'    => $shippingTotal,
-            'voucher_discount'  => $voucherDiscount,
             'grand_total'       => $grandTotal,
             'has_blocked_store' => $hasBlockedStore,
             'errors'            => array_values(array_unique($errors)),

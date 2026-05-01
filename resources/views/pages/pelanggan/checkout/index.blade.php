@@ -5,7 +5,6 @@
     $stores            = $checkout['stores'] ?? [];
     $subtotalProduk    = $checkout['subtotal_produk'] ?? 0;
     $shippingTotal     = $checkout['shipping_total'] ?? 0;
-    $voucherDiscount   = $checkout['voucher_discount'] ?? 0;
     $grandTotal        = $checkout['grand_total'] ?? 0;
     $hasBlockedStore   = $checkout['has_blocked_store'] ?? false;
     $checkoutErrors    = $checkout['errors'] ?? [];
@@ -234,10 +233,6 @@
                         <div class="d-flex justify-content-between small mb-1">
                             <span>Total Ongkir</span>
                             <span>Rp {{ number_format($shippingTotal, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between small mb-1">
-                            <span>Diskon Voucher</span>
-                            <span>- Rp {{ number_format($voucherDiscount, 0, ',', '.') }}</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between h4 mb-0">

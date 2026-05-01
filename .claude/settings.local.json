@@ -38,7 +38,9 @@
       "Bash(php -l app/Http/Controllers/Petani/LaporanController.php)",
       "Bash(php -l resources/views/components/table-toolbar.blade.php)",
       "Bash(xargs -I {} grep -l \"laporan\" {})",
-      "Bash(xargs -I {} grep -c \"@php\\\\|@forelse\" {})"
+      "Bash(xargs -I {} grep -c \"@php\\\\|@forelse\" {})",
+      "Bash(php -l app/Services/CheckoutSummaryService.php)",
+      "Bash(php -l resources/views/pages/pelanggan/checkout/index.blade.php)"
     ]
   }
 }

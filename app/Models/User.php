@@ -112,7 +112,24 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function sendEmailVerificationNotification(): void
     {
+        // Admin tidak perlu verifikasi email — skip pengiriman tautan.
+        if ($this->isAdmin()) {
+            return;
+        }
         $this->notify(new VerifyEmailNotification());
+    }
+
+    /**
+     * Admin dianggap selalu terverifikasi tanpa perlu klik tautan email.
+     * Akun admin biasanya dibuat manual oleh super-admin sehingga email-nya
+     * sudah dipercaya.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+        return parent::hasVerifiedEmail();
     }
 
     public function sendPasswordResetNotification($token): void
