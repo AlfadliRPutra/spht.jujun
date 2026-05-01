@@ -1,18 +1,20 @@
 @php
     /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $produk */
     /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Category> $rootCategories */
-    /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Category> $subCategories */
+    /** @var \Illuminate\Support\Collection<int, \App\Models\SubCategory> $subCategories */
     /** @var \App\Models\Category|null $selectedCategory */
-    /** @var string|null $activeRootSlug */
+    /** @var \App\Models\SubCategory|null $selectedSub */
     /** @var string $sort */
     /** @var array $sortOptions */
     /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\HeroSlide> $heroSlides */
     $title  = 'Katalog Produk';
     $active = 'pelanggan.katalog';
 
+    // queryBase dipakai untuk mempertahankan filter saat ganti tab/sort.
+    // sub & category direset secara eksplisit di link kategori; sort di-strip
+    // di select sort (dipasang ulang oleh form).
     $queryBase = array_filter([
         'q'        => request('q'),
-        'category' => request('category'),
         'sort'     => request('sort'),
     ], fn ($v) => $v !== null && $v !== '');
 @endphp
@@ -133,11 +135,11 @@
         <div class="filter-group">
             <div class="filter-group-label">Kategori</div>
             <div class="filter-pills">
-                <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => null])) }}"
+                <a href="{{ route('pelanggan.katalog.index', $queryBase) }}"
                    class="pill {{ ! $selectedCategory ? 'active' : '' }}">Semua</a>
                 @foreach ($rootCategories as $root)
                     <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => $root->slug])) }}"
-                       class="pill {{ $activeRootSlug === $root->slug ? 'active' : '' }}">
+                       class="pill {{ $selectedCategory?->id === $root->id ? 'active' : '' }}">
                         @if ($root->icon)<i class="ti ti-{{ $root->icon }}"></i>@endif
                         {{ $root->nama }}
                     </a>
@@ -145,13 +147,23 @@
             </div>
         </div>
 
-        @if ($subCategories->isNotEmpty())
+        @if ($selectedCategory && $subCategories->isNotEmpty())
             <div class="filter-group">
-                <div class="filter-group-label">Sub Kategori</div>
+                <div class="filter-group-label d-flex align-items-center gap-2">
+                    <span>Sub Kategori — {{ $selectedCategory->nama }}</span>
+                    @if ($selectedSub)
+                        <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => $selectedCategory->slug])) }}"
+                           class="small text-decoration-none text-secondary">
+                            <i class="ti ti-x"></i> reset sub
+                        </a>
+                    @endif
+                </div>
                 <div class="filter-pills sub">
+                    <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => $selectedCategory->slug])) }}"
+                       class="pill {{ ! $selectedSub ? 'active' : '' }}">Semua</a>
                     @foreach ($subCategories as $sub)
-                        <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => $sub->slug])) }}"
-                           class="pill {{ $selectedCategory?->id === $sub->id ? 'active' : '' }}">
+                        <a href="{{ route('pelanggan.katalog.index', array_merge($queryBase, ['category' => $selectedCategory->slug, 'sub' => $sub->slug])) }}"
+                           class="pill {{ $selectedSub?->id === $sub->id ? 'active' : '' }}">
                             {{ $sub->nama }}
                         </a>
                     @endforeach
@@ -163,13 +175,18 @@
     <div class="toolbar-row">
         <div class="text-secondary small">
             @if ($selectedCategory)
-                Kategori <strong class="text-dark">{{ $selectedCategory->nama }}</strong> &middot;
+                <span class="badge bg-blue-lt">{{ $selectedCategory->nama }}</span>
+                @if ($selectedSub)
+                    <i class="ti ti-chevron-right text-secondary mx-1"></i>
+                    <span class="badge bg-green-lt">{{ $selectedSub->nama }}</span>
+                @endif
+                <span class="mx-1">·</span>
             @endif
             Menampilkan <strong class="text-dark">{{ $produk->count() }}</strong> produk
         </div>
         <form method="GET" class="d-flex align-items-center gap-2">
-            @foreach ($queryBase as $k => $v)
-                @if ($k !== 'sort')
+            @foreach (array_merge($queryBase, ['category' => request('category'), 'sub' => request('sub')]) as $k => $v)
+                @if ($k !== 'sort' && $v !== null && $v !== '')
                     <input type="hidden" name="{{ $k }}" value="{{ $v }}">
                 @endif
             @endforeach
@@ -188,7 +205,7 @@
             <div class="col">
                 <div class="product-card reveal" style="animation-delay: {{ min($loop->index * 40, 400) }}ms">
                     <a href="{{ route('pelanggan.katalog.show', $item->slug) }}" class="product-media text-decoration-none">
-                        <span class="product-badge">{{ $item->category?->nama }}</span>
+                        <span class="product-badge">{{ $item->subCategory?->nama ?? $item->category?->nama }}</span>
                         @if ($lowStock)
                             <span class="product-badge danger">Stok Terbatas</span>
                         @endif

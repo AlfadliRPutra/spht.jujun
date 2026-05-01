@@ -1,0 +1,11 @@
+*
+!.gitignore
+!products/
+!hero/
+!ktp/
+products/*
+hero/*
+ktp/*
+!products/.gitkeep
+!hero/.gitkeep
+!ktp/.gitkeep

@@ -5,10 +5,11 @@ namespace App\Http\Controllers\Petani;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\SubCategory;
+use App\Support\PublicUpload;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProdukController extends Controller
@@ -33,48 +34,44 @@ class ProdukController extends Controller
         $perPage = in_array((int) $request->input('per_page'), [10, 25, 50, 100], true)
             ? (int) $request->input('per_page') : 10;
 
-        $categoryIds = null;
-        if ($request->filled('category')) {
-            $cat = Category::where('slug', $request->input('category'))->first();
-            $categoryIds = $cat?->descendantIds();
-        }
+        $selectedCategory = $request->filled('category')
+            ? Category::where('slug', $request->input('category'))->first()
+            : null;
+        $selectedSub = $request->filled('sub')
+            ? SubCategory::where('slug', $request->input('sub'))->first()
+            : null;
 
         $items = $request->user()->products()
-            ->with('category')
+            ->with(['category', 'subCategory'])
             ->when($request->filled('q'),              fn ($q) => $q->where('nama', 'like', '%'.$request->input('q').'%'))
-            ->when($categoryIds,                       fn ($q, $ids) => $q->whereIn('category_id', $ids))
+            ->when($selectedCategory,                  fn ($q) => $q->where('category_id', $selectedCategory->id))
+            ->when($selectedSub,                       fn ($q) => $q->where('sub_category_id', $selectedSub->id))
             ->when($request->input('stock') === 'low', fn ($q) => $q->where('stok', '<=', 20))
             ->when($request->input('stock') === 'out', fn ($q) => $q->where('stok', 0))
             ->orderBy($sortCol, $sortDir)
             ->paginate($perPage)
             ->withQueryString();
 
-        $categories = Category::with('children')->whereNull('parent_id')->orderBy('nama')->get();
+        $categories = Category::with('subCategories')->orderBy('sort_order')->orderBy('nama')->get();
 
-        return view('pages.petani.produk.index', compact('items', 'categories', 'sort', 'sortOptions', 'perPage'));
+        return view('pages.petani.produk.index', compact(
+            'items', 'categories', 'sort', 'sortOptions', 'perPage',
+            'selectedCategory', 'selectedSub'
+        ));
     }
 
     public function create(): View
     {
-        return view('pages.petani.produk.form');
+        $categories = Category::with('subCategories')->orderBy('sort_order')->orderBy('nama')->get();
+
+        return view('pages.petani.produk.form', compact('categories'));
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'nama'        => ['required', 'string', 'max:255'],
-            'category_id' => ['required', 'exists:categories,id'],
-            'harga'       => ['required', 'numeric', 'min:0'],
-            'stok'        => ['required', 'integer', 'min:0'],
-            'weight_kg'   => ['required', 'numeric', 'gt:0', 'max:9999.999'],
-            'deskripsi'   => ['nullable', 'string', 'max:5000'],
-            'gambar'      => ['nullable', 'image', 'max:4096'],
-        ]);
+        $data = $this->validateProduk($request, isCreate: true);
 
-        if ($request->hasFile('gambar')) {
-            $data['gambar'] = $request->file('gambar')->store('products', 'public');
-        }
-
+        $data['gambar']  = PublicUpload::store($request->file('gambar'), 'products');
         $data['user_id'] = $request->user()->id;
 
         Product::create($data);
@@ -88,21 +85,11 @@ class ProdukController extends Controller
     {
         abort_unless($produk->user_id === Auth::id(), 403);
 
-        $data = $request->validate([
-            'nama'        => ['required', 'string', 'max:255'],
-            'category_id' => ['required', 'exists:categories,id'],
-            'harga'       => ['required', 'numeric', 'min:0'],
-            'stok'        => ['required', 'integer', 'min:0'],
-            'weight_kg'   => ['required', 'numeric', 'gt:0', 'max:9999.999'],
-            'deskripsi'   => ['nullable', 'string', 'max:5000'],
-            'gambar'      => ['nullable', 'image', 'max:4096'],
-        ]);
+        $data = $this->validateProduk($request, isCreate: false);
 
         if ($request->hasFile('gambar')) {
-            if ($produk->gambar && ! str_starts_with($produk->gambar, 'http')) {
-                Storage::disk('public')->delete($produk->gambar);
-            }
-            $data['gambar'] = $request->file('gambar')->store('products', 'public');
+            PublicUpload::delete($produk->gambar);
+            $data['gambar'] = PublicUpload::store($request->file('gambar'), 'products');
         } else {
             unset($data['gambar']);
         }
@@ -118,14 +105,60 @@ class ProdukController extends Controller
     {
         abort_unless($produk->user_id === Auth::id(), 403);
 
-        if ($produk->gambar && ! str_starts_with($produk->gambar, 'http')) {
-            Storage::disk('public')->delete($produk->gambar);
-        }
+        PublicUpload::delete($produk->gambar);
 
         $produk->delete();
 
         return redirect()
             ->route('petani.produk.index')
             ->with('success', 'Produk berhasil dihapus.');
+    }
+
+    private function validateProduk(Request $request, bool $isCreate): array
+    {
+        $gambarRule = $isCreate
+            ? ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096']
+            : ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'];
+
+        $data = $request->validate([
+            'nama'            => ['required', 'string', 'max:255'],
+            'category_id'     => ['required', 'exists:categories,id'],
+            'sub_category_id' => ['nullable', 'exists:sub_categories,id'],
+            'harga'           => ['required', 'numeric', 'min:0'],
+            'stok'            => ['required', 'integer', 'min:0'],
+            'weight_kg'       => ['required', 'numeric', 'gt:0', 'max:9999.999'],
+            'deskripsi'       => ['nullable', 'string', 'max:5000'],
+            'gambar'          => $gambarRule,
+        ], [
+            'nama.required'            => 'Nama produk wajib diisi.',
+            'nama.max'                 => 'Nama produk maksimal :max karakter.',
+            'category_id.required'     => 'Kategori wajib dipilih.',
+            'category_id.exists'       => 'Kategori yang dipilih tidak valid.',
+            'sub_category_id.exists'   => 'Sub kategori yang dipilih tidak valid.',
+            'harga.required'           => 'Harga wajib diisi.',
+            'harga.numeric'            => 'Harga harus berupa angka.',
+            'harga.min'                => 'Harga tidak boleh negatif.',
+            'stok.required'            => 'Stok wajib diisi.',
+            'stok.integer'             => 'Stok harus berupa bilangan bulat.',
+            'stok.min'                 => 'Stok tidak boleh negatif.',
+            'weight_kg.required'       => 'Berat per unit wajib diisi.',
+            'weight_kg.gt'             => 'Berat per unit harus lebih dari 0 kg.',
+            'weight_kg.max'            => 'Berat per unit terlalu besar (maks :max kg).',
+            'deskripsi.max'            => 'Deskripsi maksimal :max karakter.',
+            'gambar.required'          => 'Foto produk wajib diunggah.',
+            'gambar.image'             => 'File yang diunggah harus berupa gambar.',
+            'gambar.mimes'             => 'Foto produk harus berformat JPG, PNG, atau WEBP.',
+            'gambar.max'               => 'Ukuran foto maksimal 4 MB.',
+        ]);
+
+        // Pastikan sub-kategori (jika diisi) konsisten dengan kategori induknya.
+        if (! empty($data['sub_category_id'])) {
+            $sub = SubCategory::find($data['sub_category_id']);
+            if (! $sub || $sub->category_id !== (int) $data['category_id']) {
+                $data['sub_category_id'] = null;
+            }
+        }
+
+        return $data;
     }
 }

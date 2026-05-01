@@ -1,5 +1,8 @@
 @php
     /** @var \Illuminate\Pagination\LengthAwarePaginator $items */
+    /** @var \Illuminate\Support\Collection<int, \App\Models\Category> $categories */
+    /** @var \App\Models\Category|null $selectedCategory */
+    /** @var \App\Models\SubCategory|null $selectedSub */
     $title  = 'Produk Saya';
     $active = 'petani.produk';
 @endphp
@@ -14,13 +17,6 @@
     @if ($errors->any())
         <div class="alert alert-danger alert-dismissible" role="alert">
             <ul class="mb-0">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
-            <a class="btn-close" data-bs-dismiss="alert"></a>
-        </div>
-    @endif
-
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible" role="alert">
-            {{ session('success') }}
             <a class="btn-close" data-bs-dismiss="alert"></a>
         </div>
     @endif
@@ -40,14 +36,17 @@
             <x-slot name="filters">
                 <div>
                     <label class="form-label small text-secondary mb-1">Kategori</label>
-                    <select name="category" class="form-select" style="min-width:180px">
-                        <option value="">Semua</option>
-                        @foreach ($categories as $root)
-                            <option value="{{ $root->slug }}" @selected(request('category') === $root->slug)>{{ $root->nama }}</option>
-                            @foreach ($root->children as $child)
-                                <option value="{{ $child->slug }}" @selected(request('category') === $child->slug)>&nbsp;&nbsp;└ {{ $child->nama }}</option>
-                            @endforeach
+                    <select name="category" class="form-select js-cat-root" data-target=".js-cat-sub" style="min-width:170px">
+                        <option value="">Semua Kategori</option>
+                        @foreach ($categories as $c)
+                            <option value="{{ $c->slug }}" @selected(request('category') === $c->slug)>{{ $c->nama }}</option>
                         @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label small text-secondary mb-1">Sub Kategori</label>
+                    <select name="sub" class="form-select js-cat-sub" data-old="{{ request('sub') }}" style="min-width:170px">
+                        <option value="">Semua</option>
                     </select>
                 </div>
                 <div>
@@ -79,7 +78,13 @@
                         <tr>
                             <td><img src="{{ $p->image_url }}" alt="{{ $p->nama }}" class="rounded" style="width:48px;height:48px;object-fit:cover" loading="lazy" decoding="async"></td>
                             <td>{{ $p->nama }}</td>
-                            <td>{{ $p->category?->nama }}</td>
+                            <td>
+                                <span class="badge bg-blue-lt">{{ $p->category?->nama ?? '—' }}</span>
+                                @if ($p->subCategory)
+                                    <i class="ti ti-chevron-right text-secondary mx-1 small"></i>
+                                    <span class="badge bg-green-lt">{{ $p->subCategory->nama }}</span>
+                                @endif
+                            </td>
                             <td class="text-end">Rp {{ number_format($p->harga, 0, ',', '.') }}</td>
                             <td class="text-end">
                                 @if ($p->stok <= 0)
@@ -131,8 +136,8 @@
                                      style="width:100%;max-width:180px;aspect-ratio:1/1;object-fit:cover;background:#f6f8fa"
                                      loading="lazy">
                                 <label class="form-label small text-secondary mt-2 mb-1 d-block">Ganti Gambar</label>
-                                <input type="file" name="gambar" accept="image/*" class="form-control form-control-sm">
-                                <div class="form-text">Maks 4 MB</div>
+                                <input type="file" name="gambar" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="form-control form-control-sm">
+                                <div class="form-text">JPG / PNG / WEBP, maks 4&nbsp;MB</div>
                             </div>
                             <div class="col-md-8">
                                 <div class="mb-3">
@@ -141,18 +146,23 @@
                                            value="{{ old('nama', $p->nama) }}" required>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label class="form-label required">Kategori</label>
-                                    <select name="category_id" class="form-select" required>
-                                        @foreach ($categories as $root)
-                                            <option value="{{ $root->id }}" @selected($p->category_id === $root->id)>{{ $root->nama }}</option>
-                                            @foreach ($root->children as $child)
-                                                <option value="{{ $child->id }}" @selected($p->category_id === $child->id)>
-                                                    &nbsp;&nbsp;└ {{ $child->nama }}
-                                                </option>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label required">Kategori</label>
+                                        <select name="category_id" class="form-select js-edit-cat" required
+                                                data-target="#edit-sub-{{ $p->id }}">
+                                            @foreach ($categories as $c)
+                                                <option value="{{ $c->id }}" @selected($p->category_id === $c->id)>{{ $c->nama }}</option>
                                             @endforeach
-                                        @endforeach
-                                    </select>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Sub Kategori</label>
+                                        <select name="sub_category_id" id="edit-sub-{{ $p->id }}" class="form-select"
+                                                data-old="{{ $p->sub_category_id }}">
+                                            <option value="">— Tanpa sub kategori —</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div class="row g-2 mb-3">
@@ -233,6 +243,52 @@
 
     @push('scripts')
         <script>
+            const SUB_MAP = @json(
+                $categories->mapWithKeys(fn ($c) => [
+                    $c->id => $c->subCategories->map(fn ($s) => ['id' => $s->id, 'slug' => $s->slug, 'nama' => $s->nama])->values()
+                ])
+            );
+            const SUB_MAP_BY_SLUG = @json(
+                $categories->mapWithKeys(fn ($c) => [
+                    $c->slug => $c->subCategories->map(fn ($s) => ['slug' => $s->slug, 'nama' => $s->nama])->values()
+                ])
+            );
+
+            // Cascading filter (toolbar) — pakai slug
+            document.querySelectorAll('.js-cat-root').forEach(root => {
+                const sub = document.querySelector(root.dataset.target);
+                if (!sub) return;
+
+                const refresh = (preselect = null) => {
+                    const list = SUB_MAP_BY_SLUG[root.value] || [];
+                    sub.innerHTML = '<option value="">Semua</option>';
+                    list.forEach(s => {
+                        const sel = s.slug === preselect ? ' selected' : '';
+                        sub.insertAdjacentHTML('beforeend', `<option value="${s.slug}"${sel}>${s.nama}</option>`);
+                    });
+                    sub.disabled = list.length === 0;
+                };
+                root.addEventListener('change', () => refresh());
+                refresh(sub.dataset.old);
+            });
+
+            // Cascading di setiap modal edit — pakai id
+            document.querySelectorAll('.js-edit-cat').forEach(root => {
+                const sub = document.querySelector(root.dataset.target);
+                if (!sub) return;
+
+                const refresh = (preselect = null) => {
+                    const list = SUB_MAP[root.value] || [];
+                    sub.innerHTML = '<option value="">— Tanpa sub kategori —</option>';
+                    list.forEach(s => {
+                        const sel = String(s.id) === String(preselect) ? ' selected' : '';
+                        sub.insertAdjacentHTML('beforeend', `<option value="${s.id}"${sel}>${s.nama}</option>`);
+                    });
+                };
+                root.addEventListener('change', () => refresh());
+                refresh(sub.dataset.old);
+            });
+
             document.querySelectorAll('.js-rupiah').forEach(el => {
                 const fmt = v => {
                     const n = String(v).replace(/\D/g, '');

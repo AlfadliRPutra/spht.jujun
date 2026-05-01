@@ -17,6 +17,7 @@ class Product extends Model
     protected $fillable = [
         'user_id',
         'category_id',
+        'sub_category_id',
         'nama',
         'slug',
         'deskripsi',
@@ -70,12 +71,9 @@ class Product extends Model
     {
         return Attribute::get(function () {
             if (! $this->gambar) {
-                return 'https://picsum.photos/seed/spht-'.$this->id.'/600/450';
+                return asset('img/placeholder-product.svg');
             }
-            if (str_starts_with($this->gambar, 'http')) {
-                return $this->gambar;
-            }
-            return asset('storage/'.$this->gambar);
+            return asset($this->gambar);
         });
     }
 
@@ -87,5 +85,10 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function subCategory(): BelongsTo
+    {
+        return $this->belongsTo(SubCategory::class);
     }
 }

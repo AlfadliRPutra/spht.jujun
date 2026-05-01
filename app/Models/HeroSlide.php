@@ -30,12 +30,9 @@ class HeroSlide extends Model
     {
         return Attribute::get(function () {
             if (! $this->image) {
-                return 'https://picsum.photos/seed/spht-hero-'.$this->id.'/1600/600';
+                return asset('img/placeholder-hero.svg');
             }
-            if (str_starts_with($this->image, 'http')) {
-                return $this->image;
-            }
-            return asset('storage/'.$this->image);
+            return asset($this->image);
         });
     }
 

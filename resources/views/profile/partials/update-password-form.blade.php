@@ -13,6 +13,8 @@
     @csrf
     @method('put')
 
+    <x-form-errors bag="updatePassword" title="Kata sandi gagal diperbarui" :success="false" />
+
     <div class="alert alert-info d-flex align-items-start gap-2 mb-4">
         <i class="ti ti-shield-check mt-1"></i>
         <div class="small">

@@ -11,35 +11,39 @@ use Illuminate\View\View;
 
 class PasswordResetLinkController extends Controller
 {
-    /**
-     * Display the password reset link request view.
-     */
+    private const STATUS_ID = [
+        Password::RESET_LINK_SENT  => 'Tautan reset kata sandi telah dikirim ke email Anda. Silakan cek inbox / folder spam.',
+        Password::INVALID_USER     => 'Email ini belum terdaftar di sistem.',
+        Password::RESET_THROTTLED  => 'Tautan reset baru saja dikirim. Tunggu beberapa saat sebelum meminta lagi.',
+    ];
+
     public function create(): View
     {
         return view('auth.forgot-password');
     }
 
     /**
-     * Handle an incoming password reset link request.
-     *
      * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'email' => ['required', 'email'],
-        ]);
-
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
-        $status = Password::sendResetLink(
-            $request->only('email')
+        $request->validate(
+            ['email' => ['required', 'email']],
+            [
+                'email.required' => 'Email wajib diisi.',
+                'email.email'    => 'Format email tidak valid.',
+            ],
         );
 
-        return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        $status = Password::sendResetLink($request->only('email'));
+        $message = self::STATUS_ID[$status] ?? __($status);
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return back()->with('status', $message);
+        }
+
+        return back()
+            ->withInput($request->only('email'))
+            ->withErrors(['email' => $message]);
     }
 }

@@ -4,13 +4,13 @@
         <div class="card-body">
             <h2 class="h2 text-center mb-4">Masuk ke akun Anda</h2>
 
-            @if (session('status'))
-                <div class="alert alert-success">{{ session('status') }}</div>
-            @endif
+            <x-form-errors title="Login gagal" />
 
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input id="email" type="email" name="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror" placeholder="nama@contoh.com" required autofocus autocomplete="username">
+                <input id="email" type="email" name="email" value="{{ old('email') }}"
+                       class="form-control @error('email') is-invalid @enderror"
+                       placeholder="nama@contoh.com" required autofocus autocomplete="username">
                 @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
@@ -24,7 +24,9 @@
                     @endif
                 </label>
                 <div class="input-group input-group-flat">
-                    <input id="password" type="password" name="password" class="form-control @error('password') is-invalid @enderror" placeholder="Kata sandi" required autocomplete="current-password">
+                    <input id="password" type="password" name="password"
+                           class="form-control @error('password') is-invalid @enderror"
+                           placeholder="Kata sandi" required autocomplete="current-password">
                     <span class="input-group-text">
                         <a href="#" class="link-secondary" data-password-toggle="#password" aria-label="Tampilkan kata sandi">
                             <i class="ti ti-eye" data-password-icon></i>

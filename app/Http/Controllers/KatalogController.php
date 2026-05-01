@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\HeroSlide;
 use App\Models\Product;
+use App\Models\SubCategory;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -26,8 +27,7 @@ class KatalogController extends Controller
             : 'latest';
         [$sortCol, $sortDir] = self::SORT_MAP[$sort];
 
-        $rootCategories = Category::roots()
-            ->with(['children' => fn ($q) => $q->orderBy('sort_order')->orderBy('nama')])
+        $rootCategories = Category::with(['subCategories' => fn ($q) => $q->orderBy('sort_order')->orderBy('nama')])
             ->orderBy('sort_order')
             ->orderBy('nama')
             ->get();
@@ -36,27 +36,20 @@ class KatalogController extends Controller
             ? Category::where('slug', $request->input('category'))->first()
             : null;
 
-        $subCategories = collect();
-        $activeRootSlug = null;
+        $selectedSub = $request->filled('sub') && $selectedCategory
+            ? SubCategory::where('slug', $request->input('sub'))
+                ->where('category_id', $selectedCategory->id)
+                ->first()
+            : null;
 
-        if ($selectedCategory) {
-            if ($selectedCategory->isRoot()) {
-                $activeRootSlug = $selectedCategory->slug;
-                $subCategories  = $selectedCategory->children;
-            } else {
-                $parent         = $selectedCategory->parent;
-                $activeRootSlug = $parent?->slug;
-                $subCategories  = $parent?->children ?? collect();
-            }
-        }
-
-        $categoryIds = $selectedCategory?->descendantIds();
+        $subCategories = $selectedCategory?->subCategories ?? collect();
 
         $produk = Product::active()
-            ->with('category', 'petani')
+            ->with(['category', 'subCategory', 'petani'])
             ->whereHas('petani', fn ($q) => $q->where('is_verified', true))
             ->when($request->filled('q'), fn ($q) => $q->where('nama', 'like', '%'.$request->input('q').'%'))
-            ->when($categoryIds, fn ($q, $ids) => $q->whereIn('category_id', $ids))
+            ->when($selectedCategory, fn ($q) => $q->where('category_id', $selectedCategory->id))
+            ->when($selectedSub, fn ($q) => $q->where('sub_category_id', $selectedSub->id))
             ->where('stok', '>', 0)
             ->orderBy($sortCol, $sortDir)
             ->orderBy('id', 'desc')
@@ -69,7 +62,7 @@ class KatalogController extends Controller
             'rootCategories'   => $rootCategories,
             'subCategories'    => $subCategories,
             'selectedCategory' => $selectedCategory,
-            'activeRootSlug'   => $activeRootSlug,
+            'selectedSub'      => $selectedSub,
             'sort'             => $sort,
             'sortOptions'      => self::SORT_MAP,
             'heroSlides'       => $heroSlides,
@@ -80,9 +73,9 @@ class KatalogController extends Controller
     {
         abort_unless($produk->petani?->is_verified, 404);
 
-        $produk->load('category.parent', 'petani');
+        $produk->load('category', 'subCategory', 'petani');
 
-        $terkait = Product::with('category')
+        $terkait = Product::with(['category', 'subCategory'])
             ->whereHas('petani', fn ($q) => $q->where('is_verified', true))
             ->where('id', '!=', $produk->id)
             ->where('category_id', $produk->category_id)

@@ -10,8 +10,7 @@
         ? (int) ($user->cart?->items()->sum('jumlah') ?? 0)
         : 0;
 
-    $rootCategories = Category::roots()
-        ->with(['children' => fn ($q) => $q->orderBy('sort_order')->orderBy('nama')])
+    $rootCategories = Category::with(['subCategories' => fn ($q) => $q->orderBy('sort_order')->orderBy('nama')])
         ->orderBy('sort_order')
         ->orderBy('nama')
         ->get();
@@ -206,8 +205,8 @@
                                     @if ($root->icon)<i class="ti ti-{{ $root->icon }} me-1"></i>@endif
                                     {{ $root->nama }}
                                 </a>
-                                @foreach ($root->children as $child)
-                                    <a href="{{ route('pelanggan.katalog.index', ['category' => $child->slug]) }}"
+                                @foreach ($root->subCategories as $child)
+                                    <a href="{{ route('pelanggan.katalog.index', ['category' => $root->slug, 'sub' => $child->slug]) }}"
                                        class="category-sub d-block">{{ $child->nama }}</a>
                                 @endforeach
                             </div>

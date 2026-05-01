@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f1f5f4"/>
+      <stop offset="100%" stop-color="#dbe7e1"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="450" fill="url(#bg)"/>
+  <g fill="none" stroke="#7a9c8a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" transform="translate(220 130)">
+    <path d="M80 10 C40 10 10 50 10 100 C10 150 50 190 100 190 C150 190 190 150 190 100 C190 60 160 30 130 20"/>
+    <path d="M120 18 C140 -10 175 -5 180 25"/>
+    <circle cx="80" cy="95" r="6" fill="#7a9c8a"/>
+    <circle cx="125" cy="115" r="5" fill="#7a9c8a"/>
+  </g>
+  <text x="300" y="370" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="600" fill="#5b7a6c" letter-spacing="1">SPHT Jujun</text>
+  <text x="300" y="398" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#7a9c8a">Belum ada foto produk</text>
+</svg>

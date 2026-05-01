@@ -4,48 +4,62 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\SubCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class KategoriController extends Controller
 {
-    private const SORT_MAP = [
-        'sort_order' => ['sort_order', 'asc',  'Urutan'],
-        'name_asc'   => ['nama',       'asc',  'Nama A-Z'],
-        'name_desc'  => ['nama',       'desc', 'Nama Z-A'],
-        'latest'     => ['created_at', 'desc', 'Terbaru'],
-        'product_desc' => ['products_count', 'desc', 'Produk Terbanyak'],
-    ];
-
     public function index(Request $request): View
     {
-        $sortOptions = array_map(fn ($v) => $v[2], self::SORT_MAP);
-        $sort = array_key_exists($request->input('sort'), self::SORT_MAP) ? $request->input('sort') : 'sort_order';
-        [$sortCol, $sortDir] = self::SORT_MAP[$sort];
-
         $perPage = in_array((int) $request->input('per_page'), [10, 25, 50, 100], true)
             ? (int) $request->input('per_page') : 25;
 
-        $items = Category::query()
-            ->withCount('products')
-            ->with('parent')
-            ->when($request->filled('q'),        fn ($q) => $q->where('nama', 'like', '%'.$request->input('q').'%'))
-            ->when($request->input('level') === 'root',  fn ($q) => $q->whereNull('parent_id'))
-            ->when($request->input('level') === 'sub',   fn ($q) => $q->whereNotNull('parent_id'))
-            ->orderBy($sortCol, $sortDir)
+        $tab = $request->input('tab') === 'sub' ? 'sub' : 'main';
+
+        // Tab utama: kategori induk + jumlah produk + jumlah sub
+        $kategoriItems = Category::query()
+            ->withCount(['products', 'subCategories'])
+            ->when($tab === 'main' && $request->filled('q'),
+                fn ($q) => $q->where('nama', 'like', '%'.$request->input('q').'%'))
+            ->orderBy('sort_order')
             ->orderBy('nama')
-            ->paginate($perPage)
+            ->paginate($perPage, ['*'], 'kpage')
             ->withQueryString();
 
-        $roots = Category::whereNull('parent_id')->orderBy('nama')->get(['id', 'nama']);
+        // Tab sub: sub kategori dengan filter parent
+        $parentFilter = $request->input('parent');
+        $subItems = SubCategory::query()
+            ->with('category')
+            ->withCount('products')
+            ->when($tab === 'sub' && $request->filled('q'),
+                fn ($q) => $q->where('nama', 'like', '%'.$request->input('q').'%'))
+            ->when($parentFilter,
+                fn ($q) => $q->whereHas('category', fn ($qq) => $qq->where('slug', $parentFilter)))
+            ->orderBy('category_id')
+            ->orderBy('sort_order')
+            ->orderBy('nama')
+            ->paginate($perPage, ['*'], 'spage')
+            ->withQueryString();
 
-        return view('pages.admin.kategori.index', compact('items', 'sort', 'sortOptions', 'perPage', 'roots'));
+        $allParents = Category::orderBy('sort_order')->orderBy('nama')->get(['id', 'nama', 'slug']);
+
+        return view('pages.admin.kategori.index', compact(
+            'kategoriItems', 'subItems', 'allParents', 'perPage', 'tab'
+        ));
     }
+
+    // ── Kategori (induk) ────────────────────────────────────────────────────
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $this->validated($request);
+        $data = $request->validate([
+            'nama'       => ['required', 'string', 'max:255', 'unique:categories,nama'],
+            'icon'       => ['nullable', 'string', 'max:50'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
         Category::create($data);
 
         return back()->with('success', 'Kategori "'.$data['nama'].'" ditambahkan.');
@@ -53,11 +67,11 @@ class KategoriController extends Controller
 
     public function update(Request $request, Category $kategori): RedirectResponse
     {
-        $data = $this->validated($request, $kategori);
-
-        if (! empty($data['parent_id']) && (int) $data['parent_id'] === $kategori->id) {
-            return back()->withErrors(['parent_id' => 'Kategori tidak bisa menjadi parent dirinya sendiri.']);
-        }
+        $data = $request->validate([
+            'nama'       => ['required', 'string', 'max:255', 'unique:categories,nama,'.$kategori->id],
+            'icon'       => ['nullable', 'string', 'max:50'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
 
         $kategori->update($data);
 
@@ -70,8 +84,8 @@ class KategoriController extends Controller
             return back()->with('error', 'Kategori "'.$kategori->nama.'" tidak bisa dihapus karena masih memiliki produk.');
         }
 
-        if ($kategori->children()->exists()) {
-            return back()->with('error', 'Kategori "'.$kategori->nama.'" masih memiliki sub-kategori. Hapus atau pindahkan dulu.');
+        if ($kategori->subCategories()->exists()) {
+            return back()->with('error', 'Kategori "'.$kategori->nama.'" masih memiliki sub kategori. Hapus sub-kategorinya dulu.');
         }
 
         $nama = $kategori->nama;
@@ -80,13 +94,60 @@ class KategoriController extends Controller
         return back()->with('success', 'Kategori "'.$nama.'" dihapus.');
     }
 
-    private function validated(Request $request, ?Category $current = null): array
+    // ── Sub Kategori ────────────────────────────────────────────────────────
+
+    public function storeSub(Request $request): RedirectResponse
     {
-        return $request->validate([
-            'nama'       => ['required', 'string', 'max:255'],
-            'parent_id'  => ['nullable', 'integer', 'exists:categories,id'],
-            'icon'       => ['nullable', 'string', 'max:50'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
+        $data = $request->validate([
+            'category_id' => ['required', 'exists:categories,id'],
+            'nama'        => ['required', 'string', 'max:255'],
+            'sort_order'  => ['nullable', 'integer', 'min:0'],
         ]);
+
+        $exists = SubCategory::where('category_id', $data['category_id'])
+            ->where('nama', $data['nama'])->exists();
+        if ($exists) {
+            return back()->withErrors(['nama' => 'Sub kategori dengan nama itu sudah ada di kategori ini.'])->withInput();
+        }
+
+        SubCategory::create($data);
+
+        return redirect()->route('admin.kategori.index', ['tab' => 'sub'])
+            ->with('success', 'Sub kategori "'.$data['nama'].'" ditambahkan.');
+    }
+
+    public function updateSub(Request $request, SubCategory $sub): RedirectResponse
+    {
+        $data = $request->validate([
+            'category_id' => ['required', 'exists:categories,id'],
+            'nama'        => ['required', 'string', 'max:255'],
+            'sort_order'  => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $exists = SubCategory::where('category_id', $data['category_id'])
+            ->where('nama', $data['nama'])
+            ->where('id', '!=', $sub->id)
+            ->exists();
+        if ($exists) {
+            return back()->withErrors(['nama' => 'Sub kategori dengan nama itu sudah ada di kategori ini.'])->withInput();
+        }
+
+        $sub->update($data);
+
+        return redirect()->route('admin.kategori.index', ['tab' => 'sub'])
+            ->with('success', 'Sub kategori "'.$sub->nama.'" diperbarui.');
+    }
+
+    public function destroySub(SubCategory $sub): RedirectResponse
+    {
+        if ($sub->products()->exists()) {
+            return back()->with('error', 'Sub kategori "'.$sub->nama.'" tidak bisa dihapus karena masih dipakai produk.');
+        }
+
+        $nama = $sub->nama;
+        $sub->delete();
+
+        return redirect()->route('admin.kategori.index', ['tab' => 'sub'])
+            ->with('success', 'Sub kategori "'.$nama.'" dihapus.');
     }
 }

@@ -3,7 +3,6 @@
     /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $terkait */
     $title  = $produk->nama;
     $active = 'pelanggan.katalog';
-    $parentCategory = $produk->category?->parent;
 @endphp
 
 <x-layouts.storefront :title="$title" :active="$active">
@@ -26,14 +25,14 @@
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb breadcrumb-arrows">
             <li class="breadcrumb-item"><a href="{{ route('pelanggan.katalog.index') }}">Katalog</a></li>
-            @if ($parentCategory)
-                <li class="breadcrumb-item">
-                    <a href="{{ route('pelanggan.katalog.index', ['category' => $parentCategory->slug]) }}">{{ $parentCategory->nama }}</a>
-                </li>
-            @endif
             @if ($produk->category)
                 <li class="breadcrumb-item">
                     <a href="{{ route('pelanggan.katalog.index', ['category' => $produk->category->slug]) }}">{{ $produk->category->nama }}</a>
+                </li>
+            @endif
+            @if ($produk->subCategory)
+                <li class="breadcrumb-item">
+                    <a href="{{ route('pelanggan.katalog.index', ['category' => $produk->category->slug, 'sub' => $produk->subCategory->slug]) }}">{{ $produk->subCategory->nama }}</a>
                 </li>
             @endif
             <li class="breadcrumb-item active">{{ $produk->nama }}</li>
@@ -57,7 +56,15 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
-                    <span class="badge bg-green-lt mb-2">{{ $produk->category?->nama }}</span>
+                    <div class="mb-2">
+                        @if ($produk->category)
+                            <span class="badge bg-blue-lt">{{ $produk->category->nama }}</span>
+                        @endif
+                        @if ($produk->subCategory)
+                            <i class="ti ti-chevron-right text-secondary mx-1"></i>
+                            <span class="badge bg-green-lt">{{ $produk->subCategory->nama }}</span>
+                        @endif
+                    </div>
                     <h1 class="h2 mb-1">{{ $produk->nama }}</h1>
                     <div class="text-secondary mb-3">
                         Dijual oleh <strong>{{ $produk->petani?->name }}</strong>

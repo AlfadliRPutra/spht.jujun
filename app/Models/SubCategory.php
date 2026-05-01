@@ -2,20 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
-class Category extends Model
+class SubCategory extends Model
 {
-    /** @use HasFactory<\Database\Factories\CategoryFactory> */
-    use HasFactory;
-
     protected $fillable = [
+        'category_id',
         'nama',
         'slug',
-        'icon',
         'sort_order',
     ];
 
@@ -33,24 +30,24 @@ class Category extends Model
 
     protected static function booted(): void
     {
-        static::saving(function (Category $category) {
-            if (! empty($category->slug)) {
+        static::saving(function (SubCategory $sub) {
+            if (! empty($sub->slug)) {
                 return;
             }
 
-            $base = Str::slug($category->nama) ?: 'kategori';
+            $base = Str::slug($sub->nama) ?: 'sub-kategori';
             $slug = $base;
             $i = 2;
-            while (static::where('slug', $slug)->where('id', '!=', $category->id)->exists()) {
+            while (static::where('slug', $slug)->where('id', '!=', $sub->id)->exists()) {
                 $slug = $base.'-'.$i++;
             }
-            $category->slug = $slug;
+            $sub->slug = $slug;
         });
     }
 
-    public function subCategories(): HasMany
+    public function category(): BelongsTo
     {
-        return $this->hasMany(SubCategory::class)->orderBy('sort_order')->orderBy('nama');
+        return $this->belongsTo(Category::class);
     }
 
     public function products(): HasMany

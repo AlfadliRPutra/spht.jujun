@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('category_id')->constrained()->restrictOnDelete();
+            $table->foreignId('sub_category_id')->nullable()->constrained('sub_categories')->nullOnDelete();
             $table->string('nama');
             $table->text('deskripsi')->nullable();
             $table->decimal('harga', 12, 2);
@@ -20,6 +21,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['category_id', 'user_id']);
+            $table->index('sub_category_id');
         });
     }
 

@@ -7,13 +7,13 @@
                 Masukkan email Anda, kami akan kirim tautan untuk mengatur ulang kata sandi.
             </p>
 
-            @if (session('status'))
-                <div class="alert alert-success">{{ session('status') }}</div>
-            @endif
+            <x-form-errors title="Permintaan reset gagal" success="status" />
 
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input id="email" type="email" name="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror" placeholder="nama@contoh.com" required autofocus>
+                <input id="email" type="email" name="email" value="{{ old('email') }}"
+                       class="form-control @error('email') is-invalid @enderror"
+                       placeholder="nama@contoh.com" required autofocus>
                 @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 

@@ -1,39 +1,39 @@
 @php
-    $title    = 'Tambah Produk';
-    $active   = 'petani.produk';
-    $kategori = \App\Models\Category::with('parent')
-        ->whereNotIn('id', \App\Models\Category::whereNotNull('parent_id')->pluck('parent_id'))
-        ->orderBy('nama')
-        ->get();
+    /** @var \Illuminate\Support\Collection<int, \App\Models\Category> $categories */
+    $title  = 'Tambah Produk';
+    $active = 'petani.produk';
 @endphp
 
 <x-layouts.app :title="$title" :active="$active">
     <div class="card">
         <div class="card-body">
-            @if ($errors->any())
-                <div class="alert alert-danger">
-                    <ul class="mb-0">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
-                </div>
-            @endif
+            <x-form-errors title="Produk gagal disimpan" />
 
-            <form action="{{ route('petani.produk.store') }}" method="POST" enctype="multipart/form-data" class="row g-3">
+            <form action="{{ route('petani.produk.store') }}" method="POST" enctype="multipart/form-data" class="row g-3" id="produk-form" novalidate>
                 @csrf
-                <div class="col-md-8">
+                <div class="col-md-12">
                     <label class="form-label required">Nama Produk</label>
                     <input type="text" name="nama" value="{{ old('nama') }}" class="form-control" required>
                 </div>
-                <div class="col-md-4">
+
+                <div class="col-md-6">
                     <label class="form-label required">Kategori</label>
-                    <select name="category_id" class="form-select" required>
+                    <select name="category_id" class="form-select js-cat-root" required data-target=".js-cat-sub">
                         <option value="">Pilih kategori</option>
-                        @foreach ($kategori as $k)
-                            <option value="{{ $k->id }}" @selected(old('category_id') == $k->id)>
-                                {{ $k->parent ? $k->parent->nama.' › '.$k->nama : $k->nama }}
-                            </option>
+                        @foreach ($categories as $c)
+                            <option value="{{ $c->id }}" @selected(old('category_id') == $c->id)>{{ $c->nama }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="col-md-6">
+                    <label class="form-label">Sub Kategori</label>
+                    <select name="sub_category_id" class="form-select js-cat-sub" data-old="{{ old('sub_category_id') }}">
+                        <option value="">— Pilih kategori dahulu —</option>
+                    </select>
+                    <div class="form-text">Opsional. Akan terbuka setelah kategori dipilih.</div>
+                </div>
+
+                <div class="col-md-4">
                     <label class="form-label required">Harga</label>
                     <div class="input-group">
                         <span class="input-group-text">Rp</span>
@@ -42,28 +42,50 @@
                                class="form-control js-rupiah" required>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label required">Stok</label>
                     <input type="number" name="stok" value="{{ old('stok') }}" class="form-control" min="0" required>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label required">Berat per Unit</label>
                     <div class="input-group">
                         <input type="number" name="weight_kg" step="0.001" min="0.001"
                                value="{{ old('weight_kg', '1') }}" class="form-control" required>
                         <span class="input-group-text">kg</span>
                     </div>
-                    <div class="form-text">Berat per unit produk dalam kilogram. Dipakai untuk perhitungan ongkos kirim.</div>
                 </div>
+
                 <div class="col-12">
                     <label class="form-label">Deskripsi</label>
                     <textarea name="deskripsi" rows="4" class="form-control">{{ old('deskripsi') }}</textarea>
                 </div>
+
                 <div class="col-12">
-                    <label class="form-label">Gambar</label>
-                    <input type="file" name="gambar" class="form-control" accept="image/*">
-                    <div class="form-text">Format JPG/PNG, maks 4 MB. Opsional — kosongkan untuk pakai placeholder.</div>
+                    <label class="form-label required">Foto Produk</label>
+                    <div class="row g-3 align-items-start">
+                        <div class="col-md-4">
+                            <div id="gambar-preview" class="rounded border d-flex align-items-center justify-content-center text-secondary"
+                                 style="width:100%;aspect-ratio:1/1;background:#f6f8fa;overflow:hidden">
+                                <div class="text-center small px-2">
+                                    <i class="ti ti-photo" style="font-size:2rem"></i>
+                                    <div>Belum ada gambar</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <input type="file" name="gambar" id="gambar-input" required
+                                   class="form-control @error('gambar') is-invalid @enderror"
+                                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                            <div class="form-text">
+                                Format <strong>JPG / PNG / WEBP</strong>, maksimal <strong>4 MB</strong>.
+                                Foto wajib diunggah agar produk tampil di katalog.
+                            </div>
+                            @error('gambar') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            <div id="gambar-info" class="small text-secondary mt-1"></div>
+                        </div>
+                    </div>
                 </div>
+
                 <div class="col-12 d-flex justify-content-end gap-2">
                     <a href="{{ route('petani.produk.index') }}" class="btn btn-link">Batal</a>
                     <button type="submit" class="btn btn-primary">Simpan</button>
@@ -74,6 +96,82 @@
 
     @push('scripts')
         <script>
+            // Cascading kategori → sub kategori
+            const SUB_MAP = @json(
+                $categories->mapWithKeys(fn ($c) => [
+                    $c->id => $c->subCategories->map(fn ($s) => ['id' => $s->id, 'nama' => $s->nama])->values()
+                ])
+            );
+
+            document.querySelectorAll('.js-cat-root').forEach(root => {
+                const sub = document.querySelector(root.dataset.target);
+                if (!sub) return;
+
+                const refresh = (preselect = null) => {
+                    const list = SUB_MAP[root.value] || [];
+                    sub.innerHTML = '';
+                    if (!root.value) {
+                        sub.insertAdjacentHTML('beforeend', '<option value="">— Pilih kategori dahulu —</option>');
+                        sub.disabled = true;
+                        return;
+                    }
+                    sub.disabled = false;
+                    sub.insertAdjacentHTML('beforeend', '<option value="">— Tanpa sub kategori —</option>');
+                    list.forEach(s => {
+                        const sel = String(s.id) === String(preselect) ? ' selected' : '';
+                        sub.insertAdjacentHTML('beforeend', `<option value="${s.id}"${sel}>${s.nama}</option>`);
+                    });
+                };
+
+                root.addEventListener('change', () => refresh());
+                refresh(sub.dataset.old);
+            });
+
+            // Foto produk: preview + validasi tipe & ukuran sebelum submit
+            (function () {
+                const input   = document.getElementById('gambar-input');
+                const preview = document.getElementById('gambar-preview');
+                const info    = document.getElementById('gambar-info');
+                if (!input) return;
+
+                const ALLOWED = ['image/jpeg','image/png','image/webp'];
+                const MAX_BYTES = 4 * 1024 * 1024;
+
+                input.addEventListener('change', () => {
+                    info.textContent = '';
+                    input.classList.remove('is-invalid');
+                    const file = input.files?.[0];
+                    if (!file) {
+                        preview.innerHTML = '<div class="text-center small px-2"><i class="ti ti-photo" style="font-size:2rem"></i><div>Belum ada gambar</div></div>';
+                        return;
+                    }
+                    if (!ALLOWED.includes(file.type)) {
+                        input.classList.add('is-invalid');
+                        info.innerHTML = '<span class="text-danger"><i class="ti ti-alert-circle me-1"></i>Format harus JPG, PNG, atau WEBP.</span>';
+                        input.value = '';
+                        return;
+                    }
+                    if (file.size > MAX_BYTES) {
+                        input.classList.add('is-invalid');
+                        info.innerHTML = '<span class="text-danger"><i class="ti ti-alert-circle me-1"></i>Ukuran maksimal 4 MB (file Anda '+(file.size/1024/1024).toFixed(2)+' MB).</span>';
+                        input.value = '';
+                        return;
+                    }
+                    const url = URL.createObjectURL(file);
+                    preview.innerHTML = '<img src="'+url+'" alt="preview" style="width:100%;height:100%;object-fit:cover">';
+                    info.innerHTML = '<i class="ti ti-circle-check text-success me-1"></i>'+file.name+' &middot; '+(file.size/1024).toFixed(0)+' KB';
+                });
+
+                document.getElementById('produk-form')?.addEventListener('submit', (e) => {
+                    if (!input.files || !input.files[0]) {
+                        e.preventDefault();
+                        input.classList.add('is-invalid');
+                        info.innerHTML = '<span class="text-danger"><i class="ti ti-alert-circle me-1"></i>Foto produk wajib diunggah.</span>';
+                        input.scrollIntoView({behavior:'smooth', block:'center'});
+                    }
+                });
+            })();
+
             document.querySelectorAll('.js-rupiah').forEach(el => {
                 const fmt = v => {
                     const n = String(v).replace(/\D/g, '');

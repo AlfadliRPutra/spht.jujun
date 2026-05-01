@@ -8,20 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('categories', function (Blueprint $table) {
+        Schema::create('sub_categories', function (Blueprint $table) {
             $table->id();
-            $table->string('nama')->unique();
+            $table->foreignId('category_id')->constrained()->cascadeOnDelete();
+            $table->string('nama');
             $table->string('slug')->unique();
-            $table->string('icon')->nullable();
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();
 
-            $table->index('sort_order');
+            $table->unique(['category_id', 'nama']);
+            $table->index(['category_id', 'sort_order']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('categories');
+        Schema::dropIfExists('sub_categories');
     }
 };

@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\HeroSlide;
+use App\Support\PublicUpload;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class HeroSlideController extends Controller
@@ -49,7 +49,7 @@ class HeroSlideController extends Controller
         $data = $this->validated($request);
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('hero', 'public');
+            $data['image'] = PublicUpload::store($request->file('image'), 'hero');
         }
 
         HeroSlide::create($data);
@@ -67,10 +67,8 @@ class HeroSlideController extends Controller
         $data = $this->validated($request);
 
         if ($request->hasFile('image')) {
-            if ($slide->image && ! str_starts_with($slide->image, 'http')) {
-                Storage::disk('public')->delete($slide->image);
-            }
-            $data['image'] = $request->file('image')->store('hero', 'public');
+            PublicUpload::delete($slide->image);
+            $data['image'] = PublicUpload::store($request->file('image'), 'hero');
         }
 
         $slide->update($data);
@@ -80,9 +78,7 @@ class HeroSlideController extends Controller
 
     public function destroy(HeroSlide $slide): RedirectResponse
     {
-        if ($slide->image && ! str_starts_with($slide->image, 'http')) {
-            Storage::disk('public')->delete($slide->image);
-        }
+        PublicUpload::delete($slide->image);
 
         $slide->delete();
 
@@ -101,7 +97,7 @@ class HeroSlideController extends Controller
         return $request->validate([
             'title'      => ['required', 'string', 'max:255'],
             'subtitle'   => ['nullable', 'string', 'max:500'],
-            'image'      => ['nullable', 'image', 'max:4096'],
+            'image'      => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'cta_label'  => ['nullable', 'string', 'max:100'],
             'cta_url'    => ['nullable', 'string', 'max:500'],
             'is_active'  => ['sometimes', 'boolean'],

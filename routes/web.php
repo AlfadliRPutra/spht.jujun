@@ -120,6 +120,10 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
             Route::post('/',             [AdminKategoriController::class, 'store'])->name('store');
             Route::put('/{kategori}',    [AdminKategoriController::class, 'update'])->name('update');
             Route::delete('/{kategori}', [AdminKategoriController::class, 'destroy'])->name('destroy');
+
+            Route::post('/sub',          [AdminKategoriController::class, 'storeSub'])->name('sub.store');
+            Route::put('/sub/{sub}',     [AdminKategoriController::class, 'updateSub'])->name('sub.update');
+            Route::delete('/sub/{sub}',  [AdminKategoriController::class, 'destroySub'])->name('sub.destroy');
         });
 
         Route::prefix('hero')->name('hero.')->group(function () {

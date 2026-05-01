@@ -40,7 +40,17 @@
       "Bash(xargs -I {} grep -l \"laporan\" {})",
       "Bash(xargs -I {} grep -c \"@php\\\\|@forelse\" {})",
       "Bash(php -l app/Services/CheckoutSummaryService.php)",
-      "Bash(php -l resources/views/pages/pelanggan/checkout/index.blade.php)"
+      "Bash(php -l resources/views/pages/pelanggan/checkout/index.blade.php)",
+      "Bash(curl -s -o nul -w \"%{http_code}\\\\n\" \"http://127.0.0.1:8765/\")",
+      "Bash(powershell -Command \"Stop-Process -Name php -Force -ErrorAction SilentlyContinue; 'killed'\")",
+      "Bash(curl -s -o nul -w \"GET /login => %{http_code}\\\\n\" \"http://127.0.0.1:8765/login\")",
+      "Bash(curl -s -o nul -w \"GET /register?role=petani => %{http_code}\\\\n\" \"http://127.0.0.1:8765/register?role=petani\")",
+      "Bash(curl -s -o nul -w \"GET /forgot-password => %{http_code}\\\\n\" \"http://127.0.0.1:8765/forgot-password\")",
+      "Bash(curl -s -o nul -w \"GET /reset-password/x?email=a@a.com => %{http_code}\\\\n\" \"http://127.0.0.1:8765/reset-password/x?email=a@a.com\")",
+      "Bash(curl -s \"http://127.0.0.1:8765/register?role=petani\")",
+      "Bash(curl -s \"http://127.0.0.1:8765/login\")",
+      "Bash(curl -s -c f:/Project/spht.jujun/cookies.txt -b f:/Project/spht.jujun/cookies.txt \"http://127.0.0.1:8765/login\" -o login-page.html)",
+      "Bash(curl -s -c f:/Project/spht.jujun/cookies.txt \"http://127.0.0.1:8765/login\" -o login-page.html)"
     ]
   }
 }
