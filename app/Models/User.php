@@ -116,7 +116,15 @@ class User extends Authenticatable implements MustVerifyEmail
         if ($this->isAdmin()) {
             return;
         }
-        $this->notify(new VerifyEmailNotification());
+
+        // Issue kode 6-digit baru setiap kali notifikasi dikirim (registrasi
+        // pertama maupun resend). Kode lama otomatis ter-overwrite.
+        $code = \App\Support\EmailVerificationCode::issue($this);
+
+        $notification = new VerifyEmailNotification();
+        $notification->code = $code;
+
+        $this->notify($notification);
     }
 
     /**
