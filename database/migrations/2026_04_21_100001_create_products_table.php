@@ -12,7 +12,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('category_id')->constrained()->restrictOnDelete();
-            $table->foreignId('sub_category_id')->nullable()->constrained('sub_categories')->nullOnDelete();
+            // FK ke sub_categories ditambahkan di migrasi 2026_04_22_100001
+            // setelah tabel sub_categories ada (filename ordering: products
+            // lahir lebih dulu dari sub_categories).
+            $table->unsignedBigInteger('sub_category_id')->nullable();
             $table->string('nama');
             $table->text('deskripsi')->nullable();
             $table->decimal('harga', 12, 2);

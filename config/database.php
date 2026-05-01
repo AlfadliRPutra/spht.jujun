@@ -56,7 +56,11 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
-            'engine' => null,
+            // Wajib InnoDB — schema kita bergantung pada foreign key constraint
+            // (sub_categories.category_id, products.category_id, dll).
+            // MyISAM (default beberapa instalasi MySQL/XAMPP) menerima skema FK
+            // tanpa error tapi diam-diam membuangnya — bug yang sulit ditelusuri.
+            'engine' => 'InnoDB',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
@@ -76,7 +80,7 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
-            'engine' => null,
+            'engine' => 'InnoDB',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
