@@ -71,11 +71,7 @@
                     @csrf
 
                     <div class="card-body">
-                        @if ($errors->any())
-                            <div class="alert alert-danger">
-                                <ul class="mb-0">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
-                            </div>
-                        @endif
+                        <x-form-errors title="Pengajuan verifikasi gagal" :success="false" />
 
                         <div class="mb-3">
                             <label class="form-label required">Nama Usaha</label>
@@ -118,12 +114,22 @@
                             @if ($petani->ktp_image_url)
                                 <div class="mb-2">
                                     <img src="{{ $petani->ktp_image_url }}" alt="KTP"
+                                         id="ktp-current"
                                          style="max-width:360px;width:100%;border-radius:.5rem;border:1px solid #e7eaf0">
                                 </div>
                             @endif
-                            <input type="file" name="ktp_image" accept="image/*" class="form-control"
+                            <input type="file" name="ktp_image" id="ktp-input"
+                                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                   class="form-control @error('ktp_image') is-invalid @enderror"
                                    @disabled($readonly)>
-                            <div class="form-text">Format JPG/PNG, maks 4 MB. Pastikan foto jelas & seluruh area KTP terlihat.</div>
+                            @error('ktp_image')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                            <div id="ktp-info" class="small text-secondary mt-1"></div>
+                            <div class="form-text">
+                                Format <strong>JPG / PNG / WEBP</strong>, maksimal <strong>4 MB</strong>.
+                                Pastikan foto jelas & seluruh area KTP terlihat.
+                            </div>
                         </div>
                     </div>
 
@@ -139,4 +145,45 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            // Preview + validasi tipe & ukuran KTP sebelum submit
+            (function () {
+                const input   = document.getElementById('ktp-input');
+                const current = document.getElementById('ktp-current');
+                const info    = document.getElementById('ktp-info');
+                if (!input) return;
+
+                const ALLOWED   = ['image/jpeg','image/png','image/webp'];
+                const MAX_BYTES = 4 * 1024 * 1024;
+
+                input.addEventListener('change', () => {
+                    info.textContent = '';
+                    input.classList.remove('is-invalid');
+                    const file = input.files?.[0];
+                    if (!file) return;
+
+                    if (!ALLOWED.includes(file.type)) {
+                        input.classList.add('is-invalid');
+                        info.innerHTML = '<span class="text-danger"><i class="ti ti-alert-circle me-1"></i>Format harus JPG, PNG, atau WEBP.</span>';
+                        input.value = '';
+                        return;
+                    }
+                    if (file.size > MAX_BYTES) {
+                        input.classList.add('is-invalid');
+                        info.innerHTML = '<span class="text-danger"><i class="ti ti-alert-circle me-1"></i>Ukuran maksimal 4 MB (file Anda '+(file.size/1024/1024).toFixed(2)+' MB).</span>';
+                        input.value = '';
+                        return;
+                    }
+
+                    const url = URL.createObjectURL(file);
+                    if (current) {
+                        current.src = url;
+                    }
+                    info.innerHTML = '<i class="ti ti-circle-check text-success me-1"></i>'+file.name+' &middot; '+(file.size/1024).toFixed(0)+' KB akan diunggah saat Anda klik kirim';
+                });
+            })();
+        </script>
+    @endpush
 </x-layouts.app>

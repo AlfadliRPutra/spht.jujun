@@ -50,7 +50,9 @@
       "Bash(curl -s \"http://127.0.0.1:8765/register?role=petani\")",
       "Bash(curl -s \"http://127.0.0.1:8765/login\")",
       "Bash(curl -s -c f:/Project/spht.jujun/cookies.txt -b f:/Project/spht.jujun/cookies.txt \"http://127.0.0.1:8765/login\" -o login-page.html)",
-      "Bash(curl -s -c f:/Project/spht.jujun/cookies.txt \"http://127.0.0.1:8765/login\" -o login-page.html)"
+      "Bash(curl -s -c f:/Project/spht.jujun/cookies.txt \"http://127.0.0.1:8765/login\" -o login-page.html)",
+      "Bash(grep -rn \"storage/'.\\\\$\" app/Models)",
+      "Bash(cmd //c \"dir f:\\\\Project\\\\spht.jujun\\\\public\\\\uploads\\\\ktp /a\")"
     ]
   }
 }

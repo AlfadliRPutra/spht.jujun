@@ -63,8 +63,11 @@ class User extends Authenticatable implements MustVerifyEmail
             if (! $this->ktp_image) {
                 return null;
             }
-            if (str_starts_with($this->ktp_image, 'http')) {
-                return $this->ktp_image;
+            // Path baru selalu diawali "uploads/" (lihat App\Support\PublicUpload).
+            // Path lama dari storage symlink ("ktp/xxx.png") di-graceful fallback ke
+            // /storage/... supaya data lama tidak putus referensi total.
+            if (str_starts_with($this->ktp_image, 'uploads/')) {
+                return asset($this->ktp_image);
             }
             return asset('storage/'.$this->ktp_image);
         });
