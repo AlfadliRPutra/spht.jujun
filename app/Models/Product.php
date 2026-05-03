@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -90,5 +91,42 @@ class Product extends Model
     public function subCategory(): BelongsTo
     {
         return $this->belongsTo(SubCategory::class);
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
+
+    /**
+     * URL galeri lengkap untuk halaman detail: gambar utama + semua gambar
+     * tambahan. Jika produk belum punya gambar sama sekali, kembalikan
+     * placeholder agar tampilan tetap aman.
+     *
+     * @return string[]
+     */
+    protected function galleryUrls(): Attribute
+    {
+        return Attribute::get(function () {
+            $urls = [];
+
+            if ($this->gambar) {
+                $urls[] = asset($this->gambar);
+            }
+
+            foreach ($this->images as $img) {
+                if ($img->path) {
+                    $urls[] = asset($img->path);
+                }
+            }
+
+            if ($urls === []) {
+                $urls[] = asset('img/placeholder-product.svg');
+            }
+
+            return $urls;
+        });
     }
 }

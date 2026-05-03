@@ -166,13 +166,6 @@
             Anda bisa menyimpan hingga <strong>{{ $maxAddresses }} alamat</strong>. Alamat <strong>utama</strong> dipakai sebagai default saat checkout.
         </p>
 
-        @if (session('success'))
-            <div class="alert alert-success py-2 small mb-3"><i class="ti ti-circle-check me-1"></i>{{ session('success') }}</div>
-        @endif
-        @if (session('error'))
-            <div class="alert alert-danger py-2 small mb-3"><i class="ti ti-alert-triangle me-1"></i>{{ session('error') }}</div>
-        @endif
-
         @if ($addresses->isEmpty())
             <div class="alert alert-warning py-2 small mb-3">
                 <i class="ti ti-alert-triangle me-1"></i>

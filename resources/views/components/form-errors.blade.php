@@ -5,21 +5,14 @@
 ])
 
 @php
-    $errorList  = isset($errors) ? $errors->getBag($bag) : new \Illuminate\Support\MessageBag();
-    $successKey = $success === false || $success === null ? null : (string) $success;
+    $errorList = isset($errors) ? $errors->getBag($bag) : new \Illuminate\Support\MessageBag();
 @endphp
 
-@if ($successKey && session()->has($successKey))
-    <div class="alert alert-success alert-dismissible mb-3" role="alert">
-        <div class="d-flex align-items-start gap-2">
-            <i class="ti ti-circle-check mt-1"></i>
-            <div class="small">{{ session($successKey) }}</div>
-        </div>
-        <a class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></a>
-    </div>
-@endif
-
-@if ($errorList->any())
+{{-- Flash success & validation errors untuk bag default sudah ditangani oleh
+     <partials.flash-popup> di setiap layout sebagai SweetAlert popup. Komponen
+     ini hanya menampilkan summary inline untuk bag non-default (mis. bag
+     "updatePassword" pada form profil) supaya tetap kontekstual di dekat form. --}}
+@if ($bag !== 'default' && $errorList->any())
     <div class="alert alert-danger alert-dismissible mb-3" role="alert">
         <div class="d-flex gap-2">
             <i class="ti ti-alert-triangle mt-1"></i>

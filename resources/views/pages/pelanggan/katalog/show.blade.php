@@ -10,9 +10,10 @@
         <style>
             .product-hero-img { border-radius: .75rem; overflow: hidden; background: #f6f8fa; aspect-ratio: 1/1; }
             .product-hero-img img { width: 100%; height: 100%; object-fit: contain; padding: 1.5rem; display: block; }
-            .thumb { width: 72px; height: 72px; border-radius:.5rem; overflow:hidden; cursor:pointer; border:2px solid transparent; background:#f6f8fa; }
+            .thumb { width: 72px; height: 72px; border-radius:.5rem; overflow:hidden; cursor:pointer; border:2px solid transparent; background:#f6f8fa; padding:0; }
             .thumb.active { border-color: #0b5d2b; }
-            .thumb img { width:100%; height:100%; object-fit:contain; padding:.35rem; }
+            .thumb:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(11,93,43,.25); }
+            .thumb img { width:100%; height:100%; object-fit:contain; padding:.35rem; display:block; }
             .qty-btn { width: 36px; height: 36px; border: 1px solid #dee2e6; background:#fff; border-radius:.375rem; font-size:1.1rem; line-height:1; }
             .mini-card { transition: transform .15s ease; border: 1px solid #eef0f3; border-radius: .75rem; overflow: hidden; background: #fff; }
             .mini-card:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.06); }
@@ -39,18 +40,27 @@
         </ol>
     </nav>
 
+    @php
+        /** @var string[] $galleryUrls */
+        $galleryUrls = $produk->gallery_urls;
+    @endphp
     <div class="row g-4">
         <div class="col-md-6">
             <div class="product-hero-img mb-3">
-                <img src="{{ $produk->image_url }}" alt="{{ $produk->nama }}" fetchpriority="high" decoding="async">
+                <img id="produk-hero-img" src="{{ $galleryUrls[0] }}" alt="{{ $produk->nama }}" fetchpriority="high" decoding="async">
             </div>
-            <div class="d-flex gap-2">
-                @for ($i = 0; $i < 4; $i++)
-                    <div class="thumb {{ $i === 0 ? 'active' : '' }}">
-                        <img src="{{ $produk->image_url }}" alt="thumb" loading="lazy" decoding="async">
-                    </div>
-                @endfor
-            </div>
+            @if (count($galleryUrls) > 1)
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach ($galleryUrls as $idx => $url)
+                        <button type="button"
+                                class="thumb js-thumb {{ $idx === 0 ? 'active' : '' }}"
+                                data-src="{{ $url }}"
+                                aria-label="Tampilkan foto {{ $idx + 1 }}">
+                            <img src="{{ $url }}" alt="Foto {{ $idx + 1 }}" loading="lazy" decoding="async">
+                        </button>
+                    @endforeach
+                </div>
+            @endif
         </div>
 
         <div class="col-md-6">
@@ -73,22 +83,29 @@
                         </span>
                     </div>
 
-                    <div class="d-flex align-items-baseline gap-2 mb-3">
+                    @php
+                        $weightStr = rtrim(rtrim(number_format((float) $produk->weight_kg, 3, ',', '.'), '0'), ',');
+                    @endphp
+                    <div class="d-flex align-items-baseline gap-2 mb-2">
                         <div class="h1 price-tag mb-0">Rp {{ number_format($produk->harga, 0, ',', '.') }}</div>
-                        <div class="text-secondary">/ kg</div>
+                        <div class="text-secondary">/ unit</div>
+                    </div>
+                    <div class="text-secondary small mb-3">
+                        <i class="ti ti-weight me-1"></i>Berat {{ $weightStr }} kg / unit
+                        <span class="text-muted">(dipakai untuk perhitungan ongkir)</span>
                     </div>
 
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <div class="border rounded p-2">
                                 <div class="small text-secondary">Stok</div>
-                                <div class="fw-bold">{{ $produk->stok }} kg</div>
+                                <div class="fw-bold">{{ $produk->stok }} unit</div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="border rounded p-2">
                                 <div class="small text-secondary">Terjual</div>
-                                <div class="fw-bold">{{ $produk->sold_count }} kg</div>
+                                <div class="fw-bold">{{ $produk->sold_count }} unit</div>
                             </div>
                         </div>
                     </div>
@@ -102,12 +119,12 @@
                         <form action="{{ route('pelanggan.keranjang.store') }}" method="POST">
                             @csrf
                             <input type="hidden" name="product_id" value="{{ $produk->id }}">
-                            <label class="form-label">Jumlah</label>
+                            <label class="form-label">Jumlah (unit)</label>
                             <div class="d-flex align-items-center gap-2 mb-3">
                                 <button type="button" class="qty-btn" onclick="this.nextElementSibling.stepDown()">−</button>
                                 <input type="number" name="jumlah" class="form-control text-center" style="max-width:80px" value="1" min="1" max="{{ $produk->stok }}">
                                 <button type="button" class="qty-btn" onclick="this.previousElementSibling.stepUp()">+</button>
-                                <span class="text-secondary small">Tersedia {{ $produk->stok }}</span>
+                                <span class="text-secondary small">Tersedia {{ $produk->stok }} unit</span>
                             </div>
 
                             <div class="row g-2">
@@ -136,6 +153,25 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            (function () {
+                const hero = document.getElementById('produk-hero-img');
+                const thumbs = document.querySelectorAll('.js-thumb');
+                if (!hero || thumbs.length === 0) return;
+
+                thumbs.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const src = btn.dataset.src;
+                        if (!src) return;
+                        hero.src = src;
+                        thumbs.forEach(t => t.classList.toggle('active', t === btn));
+                    });
+                });
+            })();
+        </script>
+    @endpush
 
     @if ($terkait->isNotEmpty())
         <div class="mt-4">

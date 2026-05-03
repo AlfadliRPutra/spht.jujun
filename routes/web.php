@@ -4,6 +4,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\KategoriController as AdminKategoriController;
 use App\Http\Controllers\Admin\PenggunaController as AdminPenggunaController;
+use App\Http\Controllers\Admin\TarifOngkirController as AdminTarifOngkirController;
 use App\Http\Controllers\Admin\TokoController as AdminTokoController;
 use App\Http\Controllers\Admin\VerifikasiController as AdminVerifikasiController;
 use App\Http\Controllers\CartController;
@@ -134,6 +135,11 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
             Route::put('/{slide}',           [HeroSlideController::class, 'update'])->name('update');
             Route::delete('/{slide}',        [HeroSlideController::class, 'destroy'])->name('destroy');
             Route::patch('/{slide}/toggle',  [HeroSlideController::class, 'toggle'])->name('toggle');
+        });
+
+        Route::prefix('tarif-ongkir')->name('tarif-ongkir.')->group(function () {
+            Route::get('/',  [AdminTarifOngkirController::class, 'index'])->name('index');
+            Route::put('/',  [AdminTarifOngkirController::class, 'update'])->name('update');
         });
     });
 });

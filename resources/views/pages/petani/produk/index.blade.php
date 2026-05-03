@@ -8,19 +8,6 @@
 @endphp
 
 <x-layouts.app :title="$title" :active="$active">
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible" role="alert">
-            {{ session('success') }}
-            <a class="btn-close" data-bs-dismiss="alert"></a>
-        </div>
-    @endif
-    @if ($errors->any())
-        <div class="alert alert-danger alert-dismissible" role="alert">
-            <ul class="mb-0">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
-            <a class="btn-close" data-bs-dismiss="alert"></a>
-        </div>
-    @endif
-
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title mb-0">Daftar Produk ({{ $items->total() }})</h3>
@@ -191,6 +178,45 @@
                             </div>
                         </div>
 
+                        <hr class="my-3">
+
+                        <div>
+                            <label class="form-label d-flex align-items-center justify-content-between">
+                                <span>Foto Tambahan</span>
+                                <span class="text-secondary small">{{ $p->images->count() }}/5</span>
+                            </label>
+
+                            @if ($p->images->isNotEmpty())
+                                <div class="row g-2 mb-2">
+                                    @foreach ($p->images as $img)
+                                        <div class="col-4 col-md-3">
+                                            <label class="d-block position-relative" style="cursor:pointer">
+                                                <img src="{{ $img->url }}" alt="" class="rounded border w-100"
+                                                     style="aspect-ratio:1/1;object-fit:cover;background:#f6f8fa" loading="lazy">
+                                                <span class="position-absolute top-0 end-0 m-1 d-flex align-items-center gap-1 bg-white bg-opacity-90 rounded px-2 py-1 small text-danger">
+                                                    <input type="checkbox" name="delete_images[]" value="{{ $img->id }}"
+                                                           class="form-check-input m-0 js-delete-img">
+                                                    <i class="ti ti-trash"></i>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="form-text mb-2">Centang gambar yang ingin dihapus saat menyimpan.</div>
+                            @else
+                                <div class="text-secondary small mb-2"><i class="ti ti-photo-off me-1"></i>Belum ada foto tambahan.</div>
+                            @endif
+
+                            <input type="file" name="gambar_extra[]" multiple
+                                   class="form-control form-control-sm js-extra-input"
+                                   data-max="{{ max(0, 5 - $p->images->count()) }}"
+                                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                            <div class="form-text">
+                                Tambah foto galeri (sisa {{ max(0, 5 - $p->images->count()) }} slot). JPG/PNG/WEBP, maks 4&nbsp;MB per file.
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mt-2 js-extra-preview"></div>
+                        </div>
+
                         @if (! $p->is_active && $p->deactivation_reason)
                             <div class="alert alert-warning mt-3 mb-0">
                                 <div class="fw-semibold small"><i class="ti ti-alert-triangle me-1"></i> Produk dinonaktifkan admin</div>
@@ -242,6 +268,7 @@
     @endforeach
 
     @push('scripts')
+        @include('partials.extra-image-accumulator')
         <script>
             const SUB_MAP = @json(
                 $categories->mapWithKeys(fn ($c) => [
@@ -287,6 +314,29 @@
                 };
                 root.addEventListener('change', () => refresh());
                 refresh(sub.dataset.old);
+            });
+
+            // Dim image preview saat checkbox "hapus" dicentang
+            document.querySelectorAll('.js-delete-img').forEach(cb => {
+                const img = cb.closest('label')?.querySelector('img');
+                const sync = () => { if (img) img.style.opacity = cb.checked ? '0.35' : '1'; };
+                cb.addEventListener('change', sync);
+                sync();
+            });
+
+            // Foto tambahan di tiap modal edit: pakai akumulator yang sama
+            // dengan halaman create. data-max menyimpan sisa slot per produk.
+            document.querySelectorAll('.js-extra-input').forEach(input => {
+                const preview  = input.parentElement.querySelector('.js-extra-preview');
+                const maxFiles = Math.max(0, parseInt(input.dataset.max || '0', 10));
+                if (! preview || maxFiles === 0) {
+                    if (preview && maxFiles === 0) {
+                        preview.innerHTML = '<div class="small text-secondary"><i class="ti ti-info-circle me-1"></i>Slot penuh — hapus sebagian foto lama dulu.</div>';
+                        input.disabled = true;
+                    }
+                    return;
+                }
+                window.spht_setupExtraImages?.(input, { previewEl: preview, maxFiles });
             });
 
             document.querySelectorAll('.js-rupiah').forEach(el => {

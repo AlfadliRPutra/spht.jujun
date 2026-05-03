@@ -15,19 +15,6 @@
 @endphp
 
 <x-layouts.app :title="$title" :active="$active">
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible" role="alert">
-            {{ session('success') }}
-            <a class="btn-close" data-bs-dismiss="alert"></a>
-        </div>
-    @endif
-    @if (session('error'))
-        <div class="alert alert-danger alert-dismissible" role="alert">
-            {{ session('error') }}
-            <a class="btn-close" data-bs-dismiss="alert"></a>
-        </div>
-    @endif
-
     <div class="row justify-content-center">
         <div class="col-lg-9">
             <div class="card mb-3">

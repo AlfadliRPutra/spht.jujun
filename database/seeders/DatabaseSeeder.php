@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             DistrictSeeder::class,
             UserSeeder::class,
             HeroSeeder::class,
+            ShippingRateSeeder::class,
             OrderSeeder::class,
         ]);
 

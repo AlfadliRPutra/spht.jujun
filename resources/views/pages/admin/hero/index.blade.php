@@ -5,13 +5,6 @@
 @endphp
 
 <x-layouts.app :title="$title" :active="$active">
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible" role="alert">
-            {{ session('success') }}
-            <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-        </div>
-    @endif
-
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <div>

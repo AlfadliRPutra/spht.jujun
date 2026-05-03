@@ -8,23 +8,6 @@
 @endphp
 
 <x-layouts.app :title="$title" :active="$active">
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible" role="alert">
-            {{ session('success') }}<a class="btn-close" data-bs-dismiss="alert"></a>
-        </div>
-    @endif
-    @if (session('error'))
-        <div class="alert alert-danger alert-dismissible" role="alert">
-            {{ session('error') }}<a class="btn-close" data-bs-dismiss="alert"></a>
-        </div>
-    @endif
-    @if ($errors->any())
-        <div class="alert alert-danger alert-dismissible" role="alert">
-            <ul class="mb-0">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
-            <a class="btn-close" data-bs-dismiss="alert"></a>
-        </div>
-    @endif
-
     <div class="card">
         <div class="card-header">
             <ul class="nav nav-tabs card-header-tabs" role="tablist">

@@ -52,7 +52,12 @@
       "Bash(curl -s -c f:/Project/spht.jujun/cookies.txt -b f:/Project/spht.jujun/cookies.txt \"http://127.0.0.1:8765/login\" -o login-page.html)",
       "Bash(curl -s -c f:/Project/spht.jujun/cookies.txt \"http://127.0.0.1:8765/login\" -o login-page.html)",
       "Bash(grep -rn \"storage/'.\\\\$\" app/Models)",
-      "Bash(cmd //c \"dir f:\\\\Project\\\\spht.jujun\\\\public\\\\uploads\\\\ktp /a\")"
+      "Bash(cmd //c \"dir f:\\\\Project\\\\spht.jujun\\\\public\\\\uploads\\\\ktp /a\")",
+      "Bash(php -l f:/Project/spht.jujun/app/Http/Controllers/Petani/ProdukController.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Models/Product.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Models/ProductImage.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Http/Controllers/KatalogController.php)",
+      "Bash(php -r 'require '\\\\''f:/Project/spht.jujun/vendor/autoload.php'\\\\''; $app = require '\\\\''f:/Project/spht.jujun/bootstrap/app.php'\\\\''; $kernel = $app->make\\(Illuminate\\\\Contracts\\\\Http\\\\Kernel::class\\); $req = Illuminate\\\\Http\\\\Request::create\\('\\\\''/katalog'\\\\'','\\\\''GET'\\\\''\\); $res = $kernel->handle\\($req\\); echo '\\\\''status='\\\\''.$res->getStatusCode\\(\\).PHP_EOL; echo '\\\\''has-region='\\\\''.\\(strpos\\($res->getContent\\(\\), '\\\\''id=\"catalog-region\"'\\\\''\\) !== false ? '\\\\''yes'\\\\'' : '\\\\''no'\\\\''\\).PHP_EOL;')"
     ]
   }
 }

@@ -85,19 +85,6 @@
 
     <main class="py-3 flex-grow-1">
         <div class="app-container">
-            @if (session('success'))
-                <div class="alert alert-success alert-dismissible d-flex align-items-center gap-2" role="alert">
-                    <i class="ti ti-circle-check"></i><span>{{ session('success') }}</span>
-                    <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-                </div>
-            @endif
-            @if (session('error'))
-                <div class="alert alert-danger alert-dismissible d-flex align-items-center gap-2" role="alert">
-                    <i class="ti ti-alert-circle"></i><span>{{ session('error') }}</span>
-                    <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-                </div>
-            @endif
-
             {{ $slot }}
         </div>
     </main>
@@ -181,6 +168,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js" defer></script>
+    @include('partials.flash-popup')
     <script>
         // Pindahkan semua .modal jadi anak langsung <body> sebelum Bootstrap init,
         // supaya modal/backdrop tidak terjebak di stacking context parent

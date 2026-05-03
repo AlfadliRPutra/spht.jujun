@@ -61,7 +61,7 @@
                 </div>
 
                 <div class="col-12">
-                    <label class="form-label required">Foto Produk</label>
+                    <label class="form-label required">Foto Utama</label>
                     <div class="row g-3 align-items-start">
                         <div class="col-md-4">
                             <div id="gambar-preview" class="rounded border d-flex align-items-center justify-content-center text-secondary"
@@ -78,12 +78,26 @@
                                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
                             <div class="form-text">
                                 Format <strong>JPG / PNG / WEBP</strong>, maksimal <strong>4 MB</strong>.
-                                Foto wajib diunggah agar produk tampil di katalog.
+                                Foto utama tampil sebagai thumbnail di katalog dan halaman detail.
                             </div>
                             @error('gambar') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                             <div id="gambar-info" class="small text-secondary mt-1"></div>
                         </div>
                     </div>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Foto Tambahan (Opsional)</label>
+                    <input type="file" name="gambar_extra[]" id="gambar-extra-input" multiple
+                           class="form-control @error('gambar_extra') is-invalid @enderror @error('gambar_extra.*') is-invalid @enderror"
+                           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                    <div class="form-text">
+                        Bisa pilih beberapa file sekaligus. Maksimal <strong>5 foto</strong>, masing-masing maks 4&nbsp;MB.
+                        Foto-foto ini ditampilkan sebagai galeri di halaman detail produk.
+                    </div>
+                    @error('gambar_extra') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                    @error('gambar_extra.*') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                    <div id="gambar-extra-preview" class="d-flex flex-wrap gap-2 mt-2"></div>
                 </div>
 
                 <div class="col-12 d-flex justify-content-end gap-2">
@@ -95,6 +109,7 @@
     </div>
 
     @push('scripts')
+        @include('partials.extra-image-accumulator')
         <script>
             // Cascading kategori → sub kategori
             const SUB_MAP = @json(
@@ -171,6 +186,15 @@
                     }
                 });
             })();
+
+            // Foto tambahan: akumulasi multi-pick + thumbnail dengan tombol hapus.
+            // Browser secara default mengganti seluruh selection setiap kali user
+            // membuka file picker. Kita akali dengan menyimpan File[] kita sendiri
+            // dan menulis ulang `input.files` lewat DataTransfer.
+            window.spht_setupExtraImages?.(document.getElementById('gambar-extra-input'), {
+                previewEl: document.getElementById('gambar-extra-preview'),
+                maxFiles: 5,
+            });
 
             document.querySelectorAll('.js-rupiah').forEach(el => {
                 const fmt = v => {

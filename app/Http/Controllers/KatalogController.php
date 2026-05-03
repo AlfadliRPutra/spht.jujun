@@ -73,7 +73,7 @@ class KatalogController extends Controller
     {
         abort_unless($produk->petani?->is_verified, 404);
 
-        $produk->load('category', 'subCategory', 'petani');
+        $produk->load('category', 'subCategory', 'petani', 'images');
 
         $terkait = Product::with(['category', 'subCategory'])
             ->whereHas('petani', fn ($q) => $q->where('is_verified', true))
