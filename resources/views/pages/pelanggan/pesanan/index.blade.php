@@ -323,6 +323,11 @@
                 {{-- Status --}}
                 <div class="os-status">
                     <span class="badge {{ $order->status->badgeClass() }}">{{ $order->status->customerLabel() }}</span>
+                    @if ($order->metode_pembayaran)
+                        <span class="badge bg-secondary-lt ms-1" title="{{ $order->metode_pembayaran->label() }}">
+                            <i class="ti ti-{{ $order->metode_pembayaran->icon() }} me-1"></i>{{ $order->metode_pembayaran->shortLabel() }}
+                        </span>
+                    @endif
                     @if ($order->status === OrderStatus::Pending && $order->expires_at && ! $order->isPaymentExpired())
                         <span class="countdown" data-pay-countdown="{{ $order->expires_at->toIso8601String() }}">
                             <i class="ti ti-clock"></i><span data-countdown-text>—</span>
@@ -422,7 +427,7 @@
                         @endif
                     </div>
                     <div class="actions">
-                        @if ($order->status === OrderStatus::Pending && $order->metode_pembayaran === 'midtrans' && ! $order->isPaymentExpired())
+                        @if ($order->status === OrderStatus::Pending && $order->metode_pembayaran?->usesMidtrans() && ! $order->isPaymentExpired())
                             @if ($order->expires_at)
                                 <span class="countdown-tag" data-pay-countdown="{{ $order->expires_at->toIso8601String() }}">
                                     <i class="ti ti-clock"></i><span data-countdown-text>—</span>

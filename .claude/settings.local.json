@@ -57,7 +57,13 @@
       "Bash(php -l f:/Project/spht.jujun/app/Models/Product.php)",
       "Bash(php -l f:/Project/spht.jujun/app/Models/ProductImage.php)",
       "Bash(php -l f:/Project/spht.jujun/app/Http/Controllers/KatalogController.php)",
-      "Bash(php -r 'require '\\\\''f:/Project/spht.jujun/vendor/autoload.php'\\\\''; $app = require '\\\\''f:/Project/spht.jujun/bootstrap/app.php'\\\\''; $kernel = $app->make\\(Illuminate\\\\Contracts\\\\Http\\\\Kernel::class\\); $req = Illuminate\\\\Http\\\\Request::create\\('\\\\''/katalog'\\\\'','\\\\''GET'\\\\''\\); $res = $kernel->handle\\($req\\); echo '\\\\''status='\\\\''.$res->getStatusCode\\(\\).PHP_EOL; echo '\\\\''has-region='\\\\''.\\(strpos\\($res->getContent\\(\\), '\\\\''id=\"catalog-region\"'\\\\''\\) !== false ? '\\\\''yes'\\\\'' : '\\\\''no'\\\\''\\).PHP_EOL;')"
+      "Bash(php -r 'require '\\\\''f:/Project/spht.jujun/vendor/autoload.php'\\\\''; $app = require '\\\\''f:/Project/spht.jujun/bootstrap/app.php'\\\\''; $kernel = $app->make\\(Illuminate\\\\Contracts\\\\Http\\\\Kernel::class\\); $req = Illuminate\\\\Http\\\\Request::create\\('\\\\''/katalog'\\\\'','\\\\''GET'\\\\''\\); $res = $kernel->handle\\($req\\); echo '\\\\''status='\\\\''.$res->getStatusCode\\(\\).PHP_EOL; echo '\\\\''has-region='\\\\''.\\(strpos\\($res->getContent\\(\\), '\\\\''id=\"catalog-region\"'\\\\''\\) !== false ? '\\\\''yes'\\\\'' : '\\\\''no'\\\\''\\).PHP_EOL;')",
+      "Bash(grep -nE 'badgeClass|status->label|\\\\$order->code|status-badge' f:/Project/spht.jujun/resources/views/pages/pelanggan/pesanan/index.blade.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Enums/PaymentMethod.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Services/CheckoutSummaryService.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Http/Controllers/Pelanggan/PembayaranController.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Http/Controllers/Pelanggan/CheckoutController.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Models/Order.php)"
     ]
   }
 }

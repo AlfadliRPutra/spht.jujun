@@ -152,7 +152,9 @@
                         <div class="d-flex flex-wrap gap-2 mb-3">
                             <span class="badge {{ $order->status->badgeClass() }}">{{ $order->status->label() }}</span>
                             @if ($order->metode_pembayaran)
-                                <span class="badge bg-secondary-lt"><i class="ti ti-credit-card me-1"></i>{{ ucfirst($order->metode_pembayaran) }}</span>
+                                <span class="badge bg-secondary-lt">
+                                    <i class="ti ti-{{ $order->metode_pembayaran->icon() }} me-1"></i>{{ $order->metode_pembayaran->label() }}
+                                </span>
                             @endif
                         </div>
 

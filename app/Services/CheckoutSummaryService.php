@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\PaymentMethod;
 use App\Models\Cart;
 use App\Models\User;
 
@@ -17,27 +18,39 @@ class CheckoutSummaryService
     public function __construct(private ShippingService $shipping) {}
 
     /**
-     * @param  array|null  $buyerAddressOverride  Snapshot alamat dari Address yang dipilih
-     *                                            di halaman checkout. Jika null, pakai default
-     *                                            user (User::addressSnapshot()).
+     * @param  array|null         $buyerAddressOverride  Snapshot alamat dari Address yang dipilih
+     *                                                   di halaman checkout. Jika null, pakai default
+     *                                                   user (User::addressSnapshot()).
+     * @param  PaymentMethod|null $paymentMethod         Online/COD pakai ongkir normal,
+     *                                                   Pickup memaksa ongkir 0 untuk semua toko.
      * @return array{
      *     stores: array<int, array<string, mixed>>,
      *     subtotal_produk: int,
      *     shipping_total: int,
      *     grand_total: int,
      *     has_blocked_store: bool,
+     *     payment_method: PaymentMethod,
      *     errors: array<int, string>,
      * }
      */
-    public function build(Cart $cart, User $buyer, ?array $buyerAddressOverride = null): array
+    public function build(
+        Cart $cart,
+        User $buyer,
+        ?array $buyerAddressOverride = null,
+        ?PaymentMethod $paymentMethod = null,
+    ): array
     {
+        $paymentMethod ??= PaymentMethod::Online;
+        $isPickup       = $paymentMethod->isPickup();
+
         $buyerAddress = $buyerAddressOverride ?? $buyer->addressSnapshot();
         $errors       = [];
 
         $hasBuyerAddress = ! empty($buyerAddress['city_id']) && ! empty($buyerAddress['district_id']);
 
-        // Validasi awal: alamat pembeli wajib lengkap (city_id + district_id).
-        if (! $hasBuyerAddress) {
+        // Validasi alamat pembeli — opsional untuk Pickup karena pelanggan
+        // datang ke toko, alamat hanya dipakai untuk identifikasi penerima.
+        if (! $hasBuyerAddress && ! $isPickup) {
             $errors[] = 'Lengkapi alamat pengiriman (provinsi, kota, kecamatan) di profil terlebih dahulu.';
         }
 
@@ -79,9 +92,40 @@ class CheckoutSummaryService
         $hasBlockedStore = false;
 
         foreach ($groups as $storeId => $group) {
-            $store = $group['store'];
+            $store           = $group['store'];
+            $weightCeil      = (int) ceil($group['total_weight_kg']);
+            $storeHasAddress = $store && $store->hasCompleteAddress();
 
-            if (! $store || ! $store->hasCompleteAddress()) {
+            // Pickup: ongkir selalu 0, tidak peduli alamat toko/pembeli.
+            // Pembeli yang akan datang ke toko, jadi alamat tidak relevan untuk ongkir.
+            if ($isPickup) {
+                $shippingInfo = [
+                    'available'        => true,
+                    'zone'             => 'pickup',
+                    'zone_label'       => 'Ambil di Toko',
+                    'base_fee'         => 0,
+                    'base_weight_kg'   => 0,
+                    'extra_fee_per_kg' => 0,
+                    'total_weight_kg'  => $weightCeil,
+                    'shipping_cost'    => 0,
+                    'message'          => $storeHasAddress
+                        ? 'Ambil sendiri di toko: '.$store->district_name.', '.$store->city_name.'. Bayar tunai saat ambil.'
+                        : 'Ambil sendiri di toko. Hubungi penjual untuk titik temu.',
+                ];
+
+                $stores[] = [
+                    'store_id'        => $storeId,
+                    'store'           => $store,
+                    'items'           => $group['items'],
+                    'subtotal'        => (int) $group['subtotal'],
+                    'total_weight_kg' => $weightCeil,
+                    'shipping'        => $shippingInfo,
+                ];
+                $subtotalProduk += (int) $group['subtotal'];
+                continue;
+            }
+
+            if (! $storeHasAddress) {
                 // Toko tanpa alamat lengkap diblok agar tidak ambigu untuk simulasi.
                 $hasBlockedStore = true;
                 $stores[] = [
@@ -89,7 +133,7 @@ class CheckoutSummaryService
                     'store'           => $store,
                     'items'           => $group['items'],
                     'subtotal'        => (int) $group['subtotal'],
-                    'total_weight_kg' => (int) ceil($group['total_weight_kg']),
+                    'total_weight_kg' => $weightCeil,
                     'shipping'        => [
                         'available'        => false,
                         'zone'             => null,
@@ -97,7 +141,7 @@ class CheckoutSummaryService
                         'base_fee'         => 0,
                         'base_weight_kg'   => 5,
                         'extra_fee_per_kg' => 0,
-                        'total_weight_kg'  => (int) ceil($group['total_weight_kg']),
+                        'total_weight_kg'  => $weightCeil,
                         'shipping_cost'    => 0,
                         'message'          => 'Toko ini belum melengkapi alamatnya. Tidak dapat memproses pengiriman.',
                     ],
@@ -121,7 +165,7 @@ class CheckoutSummaryService
                     'base_fee'         => 0,
                     'base_weight_kg'   => 5,
                     'extra_fee_per_kg' => 0,
-                    'total_weight_kg'  => (int) ceil($group['total_weight_kg']),
+                    'total_weight_kg'  => $weightCeil,
                     'shipping_cost'    => 0,
                     'message'          => 'Lengkapi alamat & berat produk terlebih dahulu.',
                 ];
@@ -144,8 +188,8 @@ class CheckoutSummaryService
             $shippingTotal  += (int) $shippingInfo['shipping_cost'];
         }
 
-        if ($hasBlockedStore) {
-            $errors[] = 'Ada toko yang berada di luar kota/kabupaten Anda atau alamat belum lengkap. Hapus dulu produknya dari keranjang untuk melanjutkan.';
+        if ($hasBlockedStore && ! $isPickup) {
+            $errors[] = 'Ada toko yang berada di luar kota/kabupaten Anda atau alamat belum lengkap. Hapus dulu produknya dari keranjang, atau pilih opsi "Ambil di Toko".';
         }
 
         $grandTotal = $subtotalProduk + $shippingTotal;
@@ -156,6 +200,7 @@ class CheckoutSummaryService
             'shipping_total'    => $shippingTotal,
             'grand_total'       => $grandTotal,
             'has_blocked_store' => $hasBlockedStore,
+            'payment_method'    => $paymentMethod,
             'errors'            => array_values(array_unique($errors)),
         ];
     }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -43,12 +44,13 @@ class Order extends Model
     protected function casts(): array
     {
         return [
-            'total_harga'      => 'decimal:2',
-            'subtotal_produk'  => 'decimal:2',
-            'shipping_total'   => 'decimal:2',
-            'status'           => OrderStatus::class,
-            'paid_at'          => 'datetime',
-            'expires_at'       => 'datetime',
+            'total_harga'        => 'decimal:2',
+            'subtotal_produk'    => 'decimal:2',
+            'shipping_total'     => 'decimal:2',
+            'status'             => OrderStatus::class,
+            'metode_pembayaran'  => PaymentMethod::class,
+            'paid_at'            => 'datetime',
+            'expires_at'         => 'datetime',
         ];
     }
 

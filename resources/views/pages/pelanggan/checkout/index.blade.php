@@ -1,4 +1,6 @@
 @php
+    use App\Enums\PaymentMethod;
+
     $title  = 'Checkout';
     $active = 'pelanggan.keranjang';
     $user   = auth()->user();
@@ -8,6 +10,11 @@
     $grandTotal        = $checkout['grand_total'] ?? 0;
     $hasBlockedStore   = $checkout['has_blocked_store'] ?? false;
     $checkoutErrors    = $checkout['errors'] ?? [];
+    /** @var \App\Enums\PaymentMethod $paymentMethod */
+    $paymentMethod   ??= PaymentMethod::Online;
+    /** @var array<int,\App\Enums\PaymentMethod> $paymentMethods */
+    $paymentMethods  ??= PaymentMethod::cases();
+    $isPickup          = $paymentMethod->isPickup();
 @endphp
 
 <x-layouts.storefront :title="$title" :active="$active">
@@ -36,12 +43,49 @@
 
         <form action="{{ route('pelanggan.pembayaran.store') }}" method="POST" class="row row-cards">
             @csrf
-            <input type="hidden" name="address_id" value="{{ $selectedAddress->id }}">
+            <input type="hidden" name="address_id"     value="{{ $selectedAddress->id }}">
+            <input type="hidden" name="payment_method" value="{{ $paymentMethod->value }}">
 
             <div class="col-md-7">
+                {{-- Pemilih metode pengiriman & pembayaran --}}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">Metode Pengiriman &amp; Pembayaran</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            @foreach ($paymentMethods as $pm)
+                                @php $isActive = $pm === $paymentMethod; @endphp
+                                <div class="col-md-4">
+                                    <a href="{{ route('pelanggan.checkout.index', ['address_id' => $selectedAddress->id, 'payment_method' => $pm->value]) }}"
+                                       class="d-block p-3 rounded border h-100 text-decoration-none {{ $isActive ? 'border-success bg-success-lt' : 'text-body' }}"
+                                       style="transition:all .15s">
+                                        <div class="d-flex align-items-start gap-2 mb-1">
+                                            <div class="avatar avatar-sm bg-light rounded">
+                                                <i class="ti ti-{{ $pm->icon() }}" style="font-size:1.25rem"></i>
+                                            </div>
+                                            <div class="flex-fill">
+                                                <div class="fw-semibold">{{ $pm->label() }}</div>
+                                                <div class="small text-secondary">{{ $pm->description() }}</div>
+                                            </div>
+                                            @if ($isActive)
+                                                <i class="ti ti-circle-check text-success"></i>
+                                            @else
+                                                <i class="ti ti-circle text-secondary"></i>
+                                            @endif
+                                        </div>
+                                    </a>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card mb-3">
                     <div class="card-header d-flex align-items-center justify-content-between">
-                        <h3 class="card-title mb-0">Alamat Pengiriman</h3>
+                        <h3 class="card-title mb-0">
+                            {{ $isPickup ? 'Data Pengambil' : 'Alamat Pengiriman' }}
+                        </h3>
                         <a href="{{ route('profile.edit') }}" class="btn btn-sm btn-outline-secondary">
                             <i class="ti ti-plus me-1"></i> Kelola Alamat
                         </a>
@@ -54,7 +98,7 @@
                                     @foreach ($addresses as $addr)
                                         @php $isSelected = $addr->id === $selectedAddress->id; @endphp
                                         <div class="col-md-6">
-                                            <a href="{{ route('pelanggan.checkout.index', ['address_id' => $addr->id]) }}"
+                                            <a href="{{ route('pelanggan.checkout.index', ['address_id' => $addr->id, 'payment_method' => $paymentMethod->value]) }}"
                                                class="d-block p-3 rounded border text-decoration-none {{ $isSelected ? 'border-success bg-success-lt' : 'text-body' }}"
                                                style="transition:all .15s">
                                                 <div class="d-flex align-items-center justify-content-between mb-1">
@@ -84,21 +128,30 @@
 
                         <div class="row g-3 small">
                             <div class="col-md-6">
-                                <div class="text-secondary">Penerima</div>
+                                <div class="text-secondary">{{ $isPickup ? 'Yang Mengambil' : 'Penerima' }}</div>
                                 <div class="fw-semibold">{{ $selectedAddress->nama_penerima }}</div>
                             </div>
                             <div class="col-md-6">
                                 <div class="text-secondary">No. HP</div>
                                 <div class="fw-semibold">{{ $selectedAddress->no_hp_penerima }}</div>
                             </div>
-                            <div class="col-12">
-                                <div class="text-secondary">Wilayah</div>
-                                <div>{{ $selectedAddress->district_name }}, {{ $selectedAddress->city_name }}, {{ $selectedAddress->province_name }}</div>
-                            </div>
-                            <div class="col-12">
-                                <div class="text-secondary">Alamat Lengkap</div>
-                                <div>{{ $selectedAddress->alamat }}</div>
-                            </div>
+                            @unless ($isPickup)
+                                <div class="col-12">
+                                    <div class="text-secondary">Wilayah</div>
+                                    <div>{{ $selectedAddress->district_name }}, {{ $selectedAddress->city_name }}, {{ $selectedAddress->province_name }}</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="text-secondary">Alamat Lengkap</div>
+                                    <div>{{ $selectedAddress->alamat }}</div>
+                                </div>
+                            @else
+                                <div class="col-12">
+                                    <div class="alert alert-info py-2 small mb-0">
+                                        <i class="ti ti-info-circle me-1"></i>
+                                        Data ini hanya untuk identifikasi pengambil. Anda akan datang langsung ke alamat masing-masing toko di bawah.
+                                    </div>
+                                </div>
+                            @endunless
                         </div>
                     </div>
                 </div>
@@ -184,17 +237,35 @@
                 @endforeach
 
                 <div class="card">
-                    <div class="card-header"><h3 class="card-title">Metode Pembayaran</h3></div>
+                    <div class="card-header"><h3 class="card-title">Yang Akan Terjadi Setelah Klik Buat Pesanan</h3></div>
                     <div class="card-body">
                         <div class="d-flex align-items-center gap-3 p-3 rounded border" style="background:#f8fafc">
                             <div class="avatar avatar-md bg-primary-lt rounded">
-                                <i class="ti ti-credit-card" style="font-size:1.6rem"></i>
+                                <i class="ti ti-{{ $paymentMethod->icon() }}" style="font-size:1.6rem"></i>
                             </div>
                             <div class="flex-fill">
-                                <div class="fw-semibold">Pembayaran Online</div>
-                                <div class="text-secondary small">Virtual Account, QRIS, E-Wallet, Kartu Kredit &mdash; pilih di halaman berikutnya.</div>
+                                <div class="fw-semibold">{{ $paymentMethod->label() }}</div>
+                                <div class="text-secondary small">
+                                    @switch($paymentMethod)
+                                        @case(PaymentMethod::Online)
+                                            Anda akan diarahkan ke halaman Midtrans untuk memilih VA/QRIS/e-wallet/kartu.
+                                            Stok akan dikurangi setelah pembayaran berhasil.
+                                            @break
+                                        @case(PaymentMethod::Cod)
+                                            Pesanan langsung diteruskan ke petani untuk dikemas. Bayar tunai ke kurir/petani saat barang sampai.
+                                            Stok dikurangi sekarang juga.
+                                            @break
+                                        @case(PaymentMethod::Pickup)
+                                            Pesanan langsung diteruskan ke petani. Datang ke alamat toko di atas, bayar tunai saat ambil.
+                                            Stok dikurangi sekarang juga.
+                                            @break
+                                    @endswitch
+                                </div>
                             </div>
-                            <span class="badge bg-green-lt"><i class="ti ti-shield-check me-1"></i>Aman</span>
+                            <span class="badge {{ $paymentMethod->usesMidtrans() ? 'bg-green-lt' : 'bg-yellow-lt' }}">
+                                <i class="ti ti-{{ $paymentMethod->usesMidtrans() ? 'shield-check' : 'cash' }} me-1"></i>
+                                {{ $paymentMethod->usesMidtrans() ? 'Aman (Midtrans)' : 'Tunai' }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -242,7 +313,8 @@
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-success w-100" @disabled($hasBlockedStore)>
-                            <i class="ti ti-credit-card me-1"></i> Lanjut Pembayaran
+                            <i class="ti ti-{{ $paymentMethod->usesMidtrans() ? 'credit-card' : 'check' }} me-1"></i>
+                            {{ $paymentMethod->usesMidtrans() ? 'Lanjut Pembayaran' : 'Buat Pesanan' }}
                         </button>
                         @if ($hasBlockedStore)
                             <div class="text-danger small text-center mt-2">

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Pelanggan;
 
+use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
-use App\Models\Address;
 use App\Services\CheckoutSummaryService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -34,13 +34,17 @@ class CheckoutController extends Controller
             : null;
         $selected   ??= $addresses->firstWhere('is_default', true) ?? $addresses->first();
 
-        $checkout = $summary->build($cart, $user, $selected->snapshot());
+        $paymentMethod = PaymentMethod::fromInput($request->query('payment_method'));
+
+        $checkout = $summary->build($cart, $user, $selected->snapshot(), $paymentMethod);
 
         return view('pages.pelanggan.checkout.index', [
             'cart'              => $cart,
             'checkout'          => $checkout,
             'addresses'         => $addresses,
             'selectedAddress'   => $selected,
+            'paymentMethod'     => $paymentMethod,
+            'paymentMethods'    => PaymentMethod::cases(),
         ]);
     }
 }
