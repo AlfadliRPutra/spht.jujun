@@ -54,19 +54,26 @@ class PenggunaController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'email'       => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password'    => ['required', 'string', 'min:8'],
-            'role'        => ['required', Rule::in(array_column(UserRole::cases(), 'value'))],
-            'no_hp'       => ['nullable', 'string', 'max:20'],
-            'alamat'      => ['nullable', 'string', 'max:500'],
-            'is_verified' => ['sometimes', 'boolean'],
+            'name'           => ['required', 'string', 'max:255'],
+            'email'          => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password'       => ['required', 'string', 'min:8'],
+            'role'           => ['required', Rule::in(array_column(UserRole::cases(), 'value'))],
+            'no_hp'          => ['nullable', 'string', 'max:20'],
+            'alamat'         => ['nullable', 'string', 'max:500'],
+            'is_verified'    => ['sometimes', 'boolean'],
+            'email_verified' => ['sometimes', 'boolean'],
         ]);
 
         $data['password']    = Hash::make($data['password']);
         $data['is_verified'] = $request->boolean('is_verified');
 
-        User::create($data);
+        // email_verified bukan kolom — disimpan via email_verified_at (bukan
+        // mass-assignable). Set di memori dulu, lalu pakai forceFill+save.
+        unset($data['email_verified']);
+
+        $user = new User($data);
+        $user->email_verified_at = $request->boolean('email_verified') ? now() : null;
+        $user->save();
 
         return back()->with('success', 'Pengguna "'.$data['name'].'" ditambahkan.');
     }
@@ -74,13 +81,14 @@ class PenggunaController extends Controller
     public function update(Request $request, User $pengguna): RedirectResponse
     {
         $data = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'email'       => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($pengguna->id)],
-            'password'    => ['nullable', 'string', 'min:8'],
-            'role'        => ['required', Rule::in(array_column(UserRole::cases(), 'value'))],
-            'no_hp'       => ['nullable', 'string', 'max:20'],
-            'alamat'      => ['nullable', 'string', 'max:500'],
-            'is_verified' => ['sometimes', 'boolean'],
+            'name'           => ['required', 'string', 'max:255'],
+            'email'          => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($pengguna->id)],
+            'password'       => ['nullable', 'string', 'min:8'],
+            'role'           => ['required', Rule::in(array_column(UserRole::cases(), 'value'))],
+            'no_hp'          => ['nullable', 'string', 'max:20'],
+            'alamat'         => ['nullable', 'string', 'max:500'],
+            'is_verified'    => ['sometimes', 'boolean'],
+            'email_verified' => ['sometimes', 'boolean'],
         ]);
 
         if (! empty($data['password'])) {
@@ -91,7 +99,23 @@ class PenggunaController extends Controller
 
         $data['is_verified'] = $request->boolean('is_verified');
 
-        $pengguna->update($data);
+        $emailVerified = $request->boolean('email_verified');
+        unset($data['email_verified']);
+
+        $pengguna->fill($data);
+
+        // email_verified_at ditangani di luar fillable. Toggle dengan eksplisit
+        // supaya admin bisa baik me-verifikasi (skip /verify-email) maupun
+        // me-batalkan verifikasi (forces /verify-email lagi saat user login).
+        if ($emailVerified) {
+            if ($pengguna->email_verified_at === null) {
+                $pengguna->email_verified_at = now();
+            }
+        } else {
+            $pengguna->email_verified_at = null;
+        }
+
+        $pengguna->save();
 
         return back()->with('success', 'Pengguna "'.$pengguna->name.'" diperbarui.');
     }

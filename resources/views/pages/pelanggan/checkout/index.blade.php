@@ -251,10 +251,6 @@
                                             Anda akan diarahkan ke halaman Midtrans untuk memilih VA/QRIS/e-wallet/kartu.
                                             Stok akan dikurangi setelah pembayaran berhasil.
                                             @break
-                                        @case(PaymentMethod::Cod)
-                                            Pesanan langsung diteruskan ke petani untuk dikemas. Bayar tunai ke kurir/petani saat barang sampai.
-                                            Stok dikurangi sekarang juga.
-                                            @break
                                         @case(PaymentMethod::Pickup)
                                             Pesanan langsung diteruskan ke petani. Datang ke alamat toko di atas, bayar tunai saat ambil.
                                             Stok dikurangi sekarang juga.

@@ -42,7 +42,6 @@ class PembayaranController extends Controller
             'address_id'     => ['required', 'integer', 'exists:addresses,id'],
             'payment_method' => ['nullable', 'string', \Illuminate\Validation\Rule::in([
                 PaymentMethod::Online->value,
-                PaymentMethod::Cod->value,
                 PaymentMethod::Pickup->value,
             ])],
         ]);
@@ -87,7 +86,7 @@ class PembayaranController extends Controller
                 ->with('error', 'Beberapa toko tidak dapat melayani pengiriman ke alamat Anda. Hapus produknya dari keranjang atau pilih "Ambil di Toko".');
         }
 
-        // Untuk COD/Pickup: order langsung berstatus Dibayar (= "dikonfirmasi,
+        // Untuk Pickup: order langsung berstatus Dibayar (= "dikonfirmasi,
         // sedang dikemas") tanpa window pembayaran Midtrans. Stok juga
         // langsung dikurangi saat order dibuat agar tidak over-sell.
         $isMidtrans = $paymentMethod->usesMidtrans();
@@ -124,7 +123,7 @@ class PembayaranController extends Controller
                     'harga'      => $item->product->harga,
                 ]);
 
-                // COD/Pickup: kurangi stok sekarang. Online: stok dikurangi
+                // Pickup: kurangi stok sekarang. Online: stok dikurangi
                 // setelah Midtrans mengonfirmasi capture/settlement.
                 if (! $isMidtrans) {
                     $product = Product::withTrashed()->lockForUpdate()->find($item->product_id);
@@ -170,12 +169,9 @@ class PembayaranController extends Controller
             return redirect()->route('pelanggan.pembayaran.show', $order);
         }
 
-        // COD / Pickup → langsung ke daftar pesanan dengan pesan sukses.
-        $msg = $paymentMethod === PaymentMethod::Cod
-            ? 'Pesanan COD berhasil dibuat. Petani akan mengemas dan mengirim — siapkan uang tunai saat barang sampai.'
-            : 'Pesanan berhasil dibuat. Datang ke alamat toko untuk mengambil & bayar tunai.';
-
-        return redirect()->route('pelanggan.pesanan.index')->with('success', $msg);
+        // Pickup → langsung ke daftar pesanan dengan pesan sukses.
+        return redirect()->route('pelanggan.pesanan.index')
+            ->with('success', 'Pesanan berhasil dibuat. Datang ke alamat toko untuk mengambil & bayar tunai.');
     }
 
     public function sync(Order $order, Request $request): RedirectResponse

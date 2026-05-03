@@ -58,7 +58,16 @@
                     @forelse ($items as $u)
                         <tr>
                             <td>{{ $u->name }}</td>
-                            <td>{{ $u->email }}</td>
+                            <td>
+                                {{ $u->email }}
+                                @if ($u->email_verified_at)
+                                    <i class="ti ti-mail-check text-success ms-1"
+                                       title="Email terverifikasi {{ $u->email_verified_at->translatedFormat('d M Y') }}"></i>
+                                @else
+                                    <i class="ti ti-mail-exclamation text-warning ms-1"
+                                       title="Email belum terverifikasi — user masih akan diarahkan ke /verify-email"></i>
+                                @endif
+                            </td>
                             <td><span class="badge bg-blue-lt">{{ $u->role->label() }}</span></td>
                             <td>{{ $u->no_hp ?? '-' }}</td>
                             <td>
@@ -137,11 +146,28 @@
                         <label class="form-label">Alamat</label>
                         <textarea name="alamat" rows="2" class="form-control">{{ old('alamat') }}</textarea>
                     </div>
-                    <label class="form-check form-switch mb-0">
-                        <input type="hidden" name="is_verified" value="0">
-                        <input type="checkbox" name="is_verified" value="1" class="form-check-input" @checked(old('is_verified'))>
-                        <span class="form-check-label">Tandai terverifikasi</span>
-                    </label>
+                    <div class="d-flex flex-column gap-2">
+                        <label class="form-check form-switch mb-0">
+                            <input type="hidden" name="email_verified" value="0">
+                            <input type="checkbox" name="email_verified" value="1" class="form-check-input" @checked(old('email_verified', '1'))>
+                            <span class="form-check-label">
+                                Email sudah terverifikasi
+                                <span class="d-block small text-secondary">
+                                    Jika dicentang, user langsung lolos halaman <code>/verify-email</code> tanpa perlu klik tautan/kode.
+                                </span>
+                            </span>
+                        </label>
+                        <label class="form-check form-switch mb-0">
+                            <input type="hidden" name="is_verified" value="0">
+                            <input type="checkbox" name="is_verified" value="1" class="form-check-input" @checked(old('is_verified'))>
+                            <span class="form-check-label">
+                                Akun terverifikasi (KTP / petani)
+                                <span class="d-block small text-secondary">
+                                    Khusus role petani — tandai jika dokumen sudah dicek manual.
+                                </span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-link" data-bs-dismiss="modal">Batal</button>
@@ -192,11 +218,34 @@
                             <label class="form-label">Alamat</label>
                             <textarea name="alamat" rows="2" class="form-control">{{ old('alamat', $u->alamat) }}</textarea>
                         </div>
-                        <label class="form-check form-switch mb-0">
-                            <input type="hidden" name="is_verified" value="0">
-                            <input type="checkbox" name="is_verified" value="1" class="form-check-input" @checked(old('is_verified', $u->is_verified))>
-                            <span class="form-check-label">Terverifikasi</span>
-                        </label>
+                        <div class="d-flex flex-column gap-2">
+                            <label class="form-check form-switch mb-0">
+                                <input type="hidden" name="email_verified" value="0">
+                                <input type="checkbox" name="email_verified" value="1" class="form-check-input"
+                                       @checked(old('email_verified', $u->email_verified_at !== null))>
+                                <span class="form-check-label">
+                                    Email terverifikasi
+                                    <span class="d-block small text-secondary">
+                                        @if ($u->email_verified_at)
+                                            Tervrf {{ $u->email_verified_at->translatedFormat('d M Y') }}.
+                                        @else
+                                            Belum. Centang untuk meloloskan halaman <code>/verify-email</code>.
+                                        @endif
+                                    </span>
+                                </span>
+                            </label>
+                            <label class="form-check form-switch mb-0">
+                                <input type="hidden" name="is_verified" value="0">
+                                <input type="checkbox" name="is_verified" value="1" class="form-check-input"
+                                       @checked(old('is_verified', $u->is_verified))>
+                                <span class="form-check-label">
+                                    Akun terverifikasi (KTP / petani)
+                                    <span class="d-block small text-secondary">
+                                        Khusus role petani — dokumen KTP sudah dicek.
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-link" data-bs-dismiss="modal">Batal</button>

@@ -24,6 +24,17 @@
         ->where('created_at', '>=', $startOfMonth)
         ->sum('total_harga');
 
+    // GMV all-time + delta vs bulan lalu
+    $gmvAllTime          = (float) Order::where('status', OrderStatus::Selesai)->sum('total_harga');
+    $startOfLastMonth    = now()->subMonthNoOverflow()->startOfMonth();
+    $endOfLastMonth      = now()->subMonthNoOverflow()->endOfMonth();
+    $pendapatanBulanLalu = (float) Order::where('status', OrderStatus::Selesai)
+        ->whereBetween('created_at', [$startOfLastMonth, $endOfLastMonth])
+        ->sum('total_harga');
+    $deltaPct = $pendapatanBulanLalu > 0
+        ? (int) round((($pendapatanBulanIni - $pendapatanBulanLalu) / $pendapatanBulanLalu) * 100)
+        : ($pendapatanBulanIni > 0 ? 100 : 0);
+
     // Tren pesanan 7 hari terakhir untuk mini-chart bar
     $last7Days = collect(range(6, 0))->map(function ($d) {
         $date = now()->subDays($d)->startOfDay();
@@ -105,10 +116,19 @@
     .ad-stat .icobg.b3 { background:#dcfce7; color:#15803d; }
     .ad-stat .icobg.b4 { background:#dbeafe; color:#1d4ed8; }
     .ad-stat .lbl { font-size:.78rem; color:#64748b; font-weight:600; }
-    .ad-stat .val { font-size:1.85rem; font-weight:800; color:#0f172a; line-height:1.1; margin-top:2px; }
+    .ad-stat .val { font-size:1.85rem; font-weight:800; color:#0f172a; line-height:1.1; margin-top:2px; letter-spacing:-.01em; }
+    .ad-stat .val.is-rp { font-size:1.45rem; }
     .ad-stat .sub { font-size:.74rem; color:#94a3b8; margin-top:4px; }
     .ad-stat .sub strong { color:#0f172a; font-weight:700; }
     .ad-stat.is-warn { border-color:#fbbf24; background: linear-gradient(180deg,#fffbeb 0%,#fff 60%); }
+    .ad-stat .delta {
+        display:inline-flex; align-items:center; gap:3px;
+        padding:2px 8px; border-radius:999px;
+        font-size:.7rem; font-weight:700; margin-top:6px;
+    }
+    .ad-stat .delta.up   { background:#dcfce7; color:#15803d; }
+    .ad-stat .delta.down { background:#fee2e2; color:#b91c1c; }
+    .ad-stat .delta.flat { background:#f1f5f9; color:#475569; }
 
     /* === Quick actions grid === */
     .ad-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:18px; }
@@ -263,8 +283,15 @@
         <div class="ad-stat">
             <div class="icobg b4"><i class="ti ti-cash-banknote"></i></div>
             <div class="lbl">Pendapatan Bulan Ini</div>
-            <div class="val">Rp&nbsp;{{ number_format($pendapatanBulanIni, 0, ',', '.') }}</div>
-            <div class="sub">dari pesanan <strong>selesai</strong></div>
+            <div class="val is-rp">Rp&nbsp;{{ number_format($pendapatanBulanIni, 0, ',', '.') }}</div>
+            @if ($deltaPct > 0)
+                <span class="delta up"><i class="ti ti-arrow-up-right"></i>{{ $deltaPct }}% vs bulan lalu</span>
+            @elseif ($deltaPct < 0)
+                <span class="delta down"><i class="ti ti-arrow-down-right"></i>{{ abs($deltaPct) }}% vs bulan lalu</span>
+            @else
+                <span class="delta flat"><i class="ti ti-minus"></i>setara bulan lalu</span>
+            @endif
+            <div class="sub mt-1">GMV all-time <strong>Rp&nbsp;{{ number_format($gmvAllTime, 0, ',', '.') }}</strong></div>
         </div>
     </div>
 </div>
@@ -300,6 +327,13 @@
         <div>
             <div class="name">Kategori</div>
             <div class="desc">{{ $totalKategori }} kategori</div>
+        </div>
+    </a>
+    <a href="{{ route('admin.tarif-ongkir.index') }}" class="ad-action">
+        <span class="ico"><i class="ti ti-truck-delivery"></i></span>
+        <div>
+            <div class="name">Tarif Ongkir</div>
+            <div class="desc">Atur per zona</div>
         </div>
     </a>
     <a href="{{ route('admin.hero.index') }}" class="ad-action">

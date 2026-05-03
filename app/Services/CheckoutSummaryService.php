@@ -21,7 +21,7 @@ class CheckoutSummaryService
      * @param  array|null         $buyerAddressOverride  Snapshot alamat dari Address yang dipilih
      *                                                   di halaman checkout. Jika null, pakai default
      *                                                   user (User::addressSnapshot()).
-     * @param  PaymentMethod|null $paymentMethod         Online/COD pakai ongkir normal,
+     * @param  PaymentMethod|null $paymentMethod         Online pakai ongkir normal;
      *                                                   Pickup memaksa ongkir 0 untuk semua toko.
      * @return array{
      *     stores: array<int, array<string, mixed>>,

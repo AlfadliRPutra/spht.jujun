@@ -33,9 +33,17 @@
         $hasWilayah = filled($user->province_id) && filled($user->city_id) && filled($user->district_id);
         $checks[] = ['label' => 'Wilayah toko',     'hint' => 'Provinsi · kota · kecamatan',    'done' => $hasWilayah,                  'href' => '#province_id',  'external' => false];
         $checks[] = ['label' => 'Alamat detail',    'hint' => 'Jalan, RT/RW, patokan',          'done' => filled($user->alamat),        'href' => '#alamat',       'external' => false];
-        // nama_usaha & nik diisi di halaman Verifikasi Akun, bukan di sini.
-        $checks[] = ['label' => 'Nama usaha',       'hint' => 'Diisi di halaman Verifikasi',    'done' => filled($user->nama_usaha),    'href' => route('petani.verifikasi.index'), 'external' => true];
-        $checks[] = ['label' => 'NIK (16 digit)',   'hint' => 'Diisi di halaman Verifikasi',    'done' => filled($user->nik),           'href' => route('petani.verifikasi.index'), 'external' => true];
+
+        // Nama usaha & NIK biasanya diisi via halaman Verifikasi Akun. Kalau
+        // admin sudah memverifikasi (is_verified = true), kita anggap sudah
+        // sah meski kolomnya kosong — admin telah men-confirm secara manual.
+        if (! $user->is_verified) {
+            $checks[] = ['label' => 'Nama usaha',     'hint' => 'Diisi di halaman Verifikasi',  'done' => filled($user->nama_usaha), 'href' => route('petani.verifikasi.index'), 'external' => true];
+            $checks[] = ['label' => 'NIK (16 digit)', 'hint' => 'Diisi di halaman Verifikasi',  'done' => filled($user->nik),        'href' => route('petani.verifikasi.index'), 'external' => true];
+        } else {
+            // Sudah diverifikasi admin → tampilkan sebagai item ✓ (informasional).
+            $checks[] = ['label' => 'Verifikasi akun', 'hint' => 'Sudah diverifikasi admin',    'done' => true,                       'href' => route('petani.verifikasi.index'), 'external' => true];
+        }
     }
 
     $totalChecks   = count($checks);
