@@ -12,13 +12,6 @@
 @endphp
 
 <x-layouts.app :title="$title" :active="$active">
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible" role="alert">
-            {{ session('success') }}
-            <a class="btn-close" data-bs-dismiss="alert"></a>
-        </div>
-    @endif
-
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Verifikasi Petani ({{ $items->total() }})</h3>

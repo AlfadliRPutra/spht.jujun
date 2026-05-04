@@ -36,12 +36,7 @@
                 @error('password') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
             </div>
 
-            <div class="mb-2">
-                <label for="remember" class="form-check">
-                    <input id="remember" type="checkbox" name="remember" class="form-check-input">
-                    <span class="form-check-label">Ingat saya</span>
-                </label>
-            </div>
+            
 
             <div class="form-footer">
                 <button type="submit" class="btn btn-primary w-100">Masuk</button>

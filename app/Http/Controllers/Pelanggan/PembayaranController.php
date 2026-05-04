@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Pelanggan;
 
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
@@ -38,8 +39,14 @@ class PembayaranController extends Controller
     public function store(Request $request, CheckoutSummaryService $summary): RedirectResponse
     {
         $data = $request->validate([
-            'address_id' => ['required', 'integer', 'exists:addresses,id'],
+            'address_id'     => ['required', 'integer', 'exists:addresses,id'],
+            'payment_method' => ['nullable', 'string', \Illuminate\Validation\Rule::in([
+                PaymentMethod::Online->value,
+                PaymentMethod::Pickup->value,
+            ])],
         ]);
+
+        $paymentMethod = PaymentMethod::fromInput($data['payment_method'] ?? null);
 
         $user = $request->user();
         $cart = $user->cart()->with('items.product.petani')->first();
@@ -67,22 +74,32 @@ class PembayaranController extends Controller
             }
         }
 
-        // Hitung ulang ongkir per toko di server — pakai snapshot alamat terpilih.
-        $checkout = $summary->build($cart, $user, $address->snapshot());
+        // Hitung ulang ongkir per toko di server — pakai snapshot alamat terpilih
+        // & metode pengiriman yang dipilih (Pickup memaksa ongkir 0).
+        $checkout = $summary->build($cart, $user, $address->snapshot(), $paymentMethod);
 
         if ($checkout['has_blocked_store']) {
-            return redirect()->route('pelanggan.checkout.index', ['address_id' => $address->id])
-                ->with('error', 'Beberapa toko tidak dapat melayani pengiriman ke alamat Anda. Hapus produknya dari keranjang.');
+            return redirect()->route('pelanggan.checkout.index', [
+                    'address_id'     => $address->id,
+                    'payment_method' => $paymentMethod->value,
+                ])
+                ->with('error', 'Beberapa toko tidak dapat melayani pengiriman ke alamat Anda. Hapus produknya dari keranjang atau pilih "Ambil di Toko".');
         }
 
-        $order = DB::transaction(function () use ($cart, $user, $address, $checkout) {
+        // Untuk Pickup: order langsung berstatus Dibayar (= "dikonfirmasi,
+        // sedang dikemas") tanpa window pembayaran Midtrans. Stok juga
+        // langsung dikurangi saat order dibuat agar tidak over-sell.
+        $isMidtrans = $paymentMethod->usesMidtrans();
+
+        $order = DB::transaction(function () use ($cart, $user, $address, $checkout, $paymentMethod, $isMidtrans) {
             $order = Order::create([
                 'user_id'                => $user->id,
                 'subtotal_produk'        => $checkout['subtotal_produk'],
                 'shipping_total'         => $checkout['shipping_total'],
                 'total_harga'            => $checkout['grand_total'],
-                'status'                 => OrderStatus::Pending,
-                'metode_pembayaran'      => 'midtrans',
+                'status'                 => $isMidtrans ? OrderStatus::Pending : OrderStatus::Dibayar,
+                'metode_pembayaran'      => $paymentMethod->value,
+                'payment_status'         => $isMidtrans ? null : 'unpaid_'.$paymentMethod->value, // mis. unpaid_cod / unpaid_pickup
                 'nama_penerima'          => $address->nama_penerima,
                 'no_hp_penerima'         => $address->no_hp_penerima,
                 'alamat_pengiriman'      => $address->alamat,
@@ -92,7 +109,9 @@ class PembayaranController extends Controller
                 'shipping_city_name'     => $address->city_name,
                 'shipping_district_id'   => $address->district_id,
                 'shipping_district_name' => $address->district_name,
-                'expires_at'             => now()->addMinutes(Order::PAYMENT_TIMEOUT_MINUTES),
+                // Hanya order Midtrans yang punya batas waktu bayar; COD/Pickup
+                // tidak boleh expired karena pembayarannya offline.
+                'expires_at'             => $isMidtrans ? now()->addMinutes(Order::PAYMENT_TIMEOUT_MINUTES) : null,
             ]);
 
             foreach ($cart->items as $item) {
@@ -103,6 +122,15 @@ class PembayaranController extends Controller
                     'weight_kg'  => $item->product->weight_kg,
                     'harga'      => $item->product->harga,
                 ]);
+
+                // Pickup: kurangi stok sekarang. Online: stok dikurangi
+                // setelah Midtrans mengonfirmasi capture/settlement.
+                if (! $isMidtrans) {
+                    $product = Product::withTrashed()->lockForUpdate()->find($item->product_id);
+                    if ($product) {
+                        $product->decrement('stok', $item->jumlah);
+                    }
+                }
             }
 
             // Catat rincian ongkir per toko sebagai snapshot (audit & tampilan invoice).
@@ -128,16 +156,22 @@ class PembayaranController extends Controller
             return $order;
         });
 
-        try {
-            $snapToken = $this->generateSnapToken($order);
-        } catch (\Throwable $e) {
-            Log::error('Midtrans snap token error', ['order_id' => $order->id, 'error' => $e->getMessage()]);
-            $order->update(['status' => OrderStatus::Batal]);
-            return redirect()->route('pelanggan.keranjang.index')
-                ->with('error', 'Gagal menginisialisasi pembayaran: '.$e->getMessage());
+        // Online → lanjut ke halaman pembayaran Midtrans.
+        if ($isMidtrans) {
+            try {
+                $this->generateSnapToken($order);
+            } catch (\Throwable $e) {
+                Log::error('Midtrans snap token error', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+                $order->update(['status' => OrderStatus::Batal]);
+                return redirect()->route('pelanggan.keranjang.index')
+                    ->with('error', 'Gagal menginisialisasi pembayaran: '.$e->getMessage());
+            }
+            return redirect()->route('pelanggan.pembayaran.show', $order);
         }
 
-        return redirect()->route('pelanggan.pembayaran.show', $order);
+        // Pickup → langsung ke daftar pesanan dengan pesan sukses.
+        return redirect()->route('pelanggan.pesanan.index')
+            ->with('success', 'Pesanan berhasil dibuat. Datang ke alamat toko untuk mengambil & bayar tunai.');
     }
 
     public function sync(Order $order, Request $request): RedirectResponse

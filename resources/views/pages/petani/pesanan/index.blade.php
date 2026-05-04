@@ -7,18 +7,6 @@
 @endphp
 
 <x-layouts.app :title="$title" :active="$active">
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible" role="alert">
-            {{ session('success') }}
-            <a class="btn-close" data-bs-dismiss="alert"></a>
-        </div>
-    @endif
-    @if (session('error'))
-        <div class="alert alert-danger alert-dismissible" role="alert">
-            {{ session('error') }}
-            <a class="btn-close" data-bs-dismiss="alert"></a>
-        </div>
-    @endif
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Pesanan dari Pelanggan ({{ $items->total() }})</h3>
@@ -164,7 +152,9 @@
                         <div class="d-flex flex-wrap gap-2 mb-3">
                             <span class="badge {{ $order->status->badgeClass() }}">{{ $order->status->label() }}</span>
                             @if ($order->metode_pembayaran)
-                                <span class="badge bg-secondary-lt"><i class="ti ti-credit-card me-1"></i>{{ ucfirst($order->metode_pembayaran) }}</span>
+                                <span class="badge bg-secondary-lt">
+                                    <i class="ti ti-{{ $order->metode_pembayaran->icon() }} me-1"></i>{{ $order->metode_pembayaran->label() }}
+                                </span>
                             @endif
                         </div>
 

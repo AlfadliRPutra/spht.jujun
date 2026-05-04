@@ -165,4 +165,14 @@
     @media (prefers-reduced-motion: reduce){
         .page-body, main{ animation: none; }
     }
+
+    /* Hilangkan spinner pada input type="number" supaya angka tidak bisa
+       berubah lewat tombol panah atas/bawah (mouse wheel & arrow keys
+       tetap bekerja sebagai default browser, tetapi UI panahnya hilang). */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button{
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    input[type="number"]{ -moz-appearance: textfield; appearance: textfield; }
 </style>

@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\ShippingRate;
 use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * Simulasi ongkos kirim marketplace hasil tani lokal.
@@ -13,6 +15,10 @@ use InvalidArgumentException;
  * dikalikan total berat barang per toko.
  *
  * Rumus: shipping_cost = base_fee + max(0, total_weight_kg - base_weight_kg) * extra_fee_per_kg
+ *
+ * Tarif tiap zona disimpan di tabel `shipping_rates` dan dapat diubah admin
+ * lewat menu "Tarif Ongkir". Nilai default awal di-seed oleh
+ * {@see \Database\Seeders\ShippingRateSeeder}.
  */
 class ShippingService
 {
@@ -21,37 +27,22 @@ class ShippingService
     public const ZONE_SAME_PROVINCE    = 'same_province';      // 1 provinsi, beda kabupaten/kota
     public const ZONE_OUTSIDE_PROVINCE = 'outside_province';   // luar provinsi
 
-    /**
-     * Tabel tarif per zona — terpusat agar mudah disesuaikan dan diuji.
-     * Semua zona memakai formula yang sama (base + ekstra per kg di atas berat dasar);
-     * yang membedakan hanya nominalnya.
-     */
-    private const RATES = [
-        self::ZONE_SAME_DISTRICT => [
-            'label'            => 'Satu Kecamatan',
-            'base_fee'         => 7000,
-            'base_weight_kg'   => 5,
-            'extra_fee_per_kg' => 2000,
-        ],
-        self::ZONE_SAME_CITY => [
-            'label'            => 'Satu Kabupaten/Kota',
-            'base_fee'         => 20000,
-            'base_weight_kg'   => 5,
-            'extra_fee_per_kg' => 3000,
-        ],
-        self::ZONE_SAME_PROVINCE => [
-            'label'            => 'Satu Provinsi',
-            'base_fee'         => 25000,
-            'base_weight_kg'   => 5,
-            'extra_fee_per_kg' => 3000,
-        ],
-        self::ZONE_OUTSIDE_PROVINCE => [
-            'label'            => 'Luar Provinsi',
-            'base_fee'         => 30000,
-            'base_weight_kg'   => 5,
-            'extra_fee_per_kg' => 3000,
-        ],
+    /** Daftar semua zona yang dikenali, urut dari paling spesifik. */
+    public const ZONES = [
+        self::ZONE_SAME_DISTRICT,
+        self::ZONE_SAME_CITY,
+        self::ZONE_SAME_PROVINCE,
+        self::ZONE_OUTSIDE_PROVINCE,
     ];
+
+    /**
+     * Cache tarif per-instance (per-request) supaya satu kali checkout yang
+     * memanggil calculateShipping berkali-kali untuk banyak toko hanya
+     * memuat tabel `shipping_rates` sekali.
+     *
+     * @var array<string, array{label:string, base_fee:int, base_weight_kg:int, extra_fee_per_kg:int}>|null
+     */
+    private ?array $rates = null;
 
     /**
      * Hitung ongkos kirim dari satu toko ke alamat pembeli.
@@ -59,7 +50,7 @@ class ShippingService
      * @param  array  $storeAddress  Wajib mengandung province_id, city_id & district_id.
      * @param  array  $buyerAddress  Wajib mengandung province_id, city_id & district_id.
      * @param  float  $totalWeightKg Total berat untuk toko ini (kg). Pecahan dibulatkan ke atas.
-     * @return array  Lihat dokumentasi return format pada README/spec fitur.
+     * @return array
      */
     public function calculateShipping(array $storeAddress, array $buyerAddress, float $totalWeightKg): array
     {
@@ -74,7 +65,7 @@ class ShippingService
         $weight = (int) ceil($totalWeightKg);
 
         $zone = $this->determineZone($storeAddress, $buyerAddress);
-        $rate = self::RATES[$zone];
+        $rate = $this->rate($zone);
 
         // Komponen tambahan hanya berlaku untuk berat di atas berat dasar.
         $extraWeight  = max(0, $weight - $rate['base_weight_kg']);
@@ -124,6 +115,34 @@ class ShippingService
                 throw new InvalidArgumentException("$label.$field wajib diisi untuk perhitungan ongkir.");
             }
         }
+    }
+
+    /**
+     * Ambil tarif untuk zona tertentu dari cache instance, memuat dari DB
+     * lazily pada panggilan pertama.
+     *
+     * @return array{label:string, base_fee:int, base_weight_kg:int, extra_fee_per_kg:int}
+     */
+    private function rate(string $zone): array
+    {
+        if ($this->rates === null) {
+            $this->rates = ShippingRate::query()
+                ->get(['zone', 'label', 'base_fee', 'base_weight_kg', 'extra_fee_per_kg'])
+                ->keyBy('zone')
+                ->map(fn (ShippingRate $r) => [
+                    'label'            => $r->label,
+                    'base_fee'         => (int) $r->base_fee,
+                    'base_weight_kg'   => (int) $r->base_weight_kg,
+                    'extra_fee_per_kg' => (int) $r->extra_fee_per_kg,
+                ])
+                ->all();
+        }
+
+        if (! isset($this->rates[$zone])) {
+            throw new RuntimeException("Tarif untuk zona '$zone' belum dikonfigurasi. Jalankan ShippingRateSeeder atau atur lewat menu admin.");
+        }
+
+        return $this->rates[$zone];
     }
 
     private function buildMessage(string $zone, int $weight, array $rate, float $cost): string

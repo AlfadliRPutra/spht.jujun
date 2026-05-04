@@ -16,14 +16,6 @@
 
     @include('partials.theme')
 
-    <style>
-        /* Flash alert wrapper */
-        .flash-wrap{ position:sticky;top:0;z-index:1020; }
-        .flash-wrap .alert{
-            margin:.75rem 0;border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-        }
-    </style>
     @stack('styles')
 </head>
 <body>
@@ -35,21 +27,6 @@
 
             <div class="page-body">
                 <div class="container-xl">
-                    <div class="flash-wrap">
-                        @if (session('success'))
-                            <div class="alert alert-success alert-dismissible d-flex align-items-center gap-2" role="alert">
-                                <i class="ti ti-circle-check"></i><span>{{ session('success') }}</span>
-                                <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-                            </div>
-                        @endif
-                        @if (session('error'))
-                            <div class="alert alert-danger alert-dismissible d-flex align-items-center gap-2" role="alert">
-                                <i class="ti ti-alert-circle"></i><span>{{ session('error') }}</span>
-                                <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-                            </div>
-                        @endif
-                    </div>
-
                     {{ $slot }}
                 </div>
             </div>
@@ -64,6 +41,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    @include('partials.flash-popup')
     <script>
         // Pindahkan semua .modal jadi anak langsung <body> sebelum Bootstrap
         // mem-bind handler. Tanpa ini, modal kadang gagal close karena terjebak

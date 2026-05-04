@@ -211,7 +211,7 @@
             <div class="info-box">
                 <div class="lbl">Status</div>
                 <div class="val">{{ $order->status->label() }}</div>
-                <div class="sub">Pembayaran: {{ ucfirst($order->metode_pembayaran ?? '—') }}</div>
+                <div class="sub">Pembayaran: {{ $order->metode_pembayaran?->label() ?? '—' }}</div>
             </div>
         </div>
 

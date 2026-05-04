@@ -236,7 +236,9 @@
                     @if ($petani->no_hp)
                         <span><i class="ti ti-phone me-1"></i>{{ $petani->no_hp }}</span>
                     @endif
-                    <span><i class="ti ti-calendar me-1"></i>Daftar {{ $petani->created_at->translatedFormat('d M Y') }}</span>
+                    @if ($petani->created_at)
+                        <span><i class="ti ti-calendar me-1"></i>Daftar {{ $petani->created_at->translatedFormat('d M Y') }}</span>
+                    @endif
                 </div>
             </div>
             <div class="text-end">

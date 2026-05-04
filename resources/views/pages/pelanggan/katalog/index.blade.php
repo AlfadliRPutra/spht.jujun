@@ -87,6 +87,19 @@
             @media (max-width: 576px) {
                 .product-media { height: 160px; }
             }
+
+            /* Seamless filter — overlay loading saat AJAX swap */
+            .catalog-region { position: relative; }
+            .catalog-region.is-loading { opacity: .55; pointer-events: none; transition: opacity .15s ease; }
+            .catalog-region.is-loading::after {
+                content: '';
+                position: absolute; top: 1rem; left: 50%; transform: translateX(-50%);
+                width: 28px; height: 28px;
+                border: 3px solid var(--spht-border); border-top-color: var(--spht-green);
+                border-radius: 50%; animation: catalogSpin .7s linear infinite;
+                z-index: 5;
+            }
+            @keyframes catalogSpin { to { transform: translateX(-50%) rotate(360deg); } }
         </style>
     @endpush
 
@@ -131,6 +144,7 @@
         </div>
     @endif
 
+    <div id="catalog-region" class="catalog-region">
     <div class="filter-panel">
         <div class="filter-group">
             <div class="filter-group-label">Kategori</div>
@@ -250,4 +264,85 @@
             </div>
         @endforelse
     </div>
+    </div>{{-- /#catalog-region --}}
+
+    @push('scripts')
+        <script>
+            // Filter & sort katalog tanpa reload halaman penuh.
+            // Strategi: intercept klik pill / submit form sort di dalam #catalog-region,
+            // fetch URL tujuan, ekstrak #catalog-region dari respons, swap.
+            // Tetap pakai navigasi penuh untuk pencarian (form di header) — itu di luar region.
+            (function () {
+                const REGION_ID = 'catalog-region';
+                let pending = null;
+
+                function findRegion() { return document.getElementById(REGION_ID); }
+
+                async function loadCatalog(url, opts = {}) {
+                    const region = findRegion();
+                    if (! region) { window.location.href = url; return; }
+
+                    // Batalkan request sebelumnya supaya klik beruntun tidak race.
+                    if (pending) pending.abort();
+                    const ctrl = new AbortController();
+                    pending = ctrl;
+
+                    region.classList.add('is-loading');
+
+                    try {
+                        const res = await fetch(url, {
+                            signal: ctrl.signal,
+                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' },
+                            credentials: 'same-origin',
+                        });
+                        if (! res.ok) throw new Error('HTTP ' + res.status);
+                        const html = await res.text();
+                        const doc  = new DOMParser().parseFromString(html, 'text/html');
+                        const next = doc.getElementById(REGION_ID);
+                        if (! next) throw new Error('region tidak ditemukan di respons');
+
+                        region.replaceWith(next);
+
+                        if (! opts.skipPushState) {
+                            history.pushState({ catalog: true }, '', url);
+                        }
+
+                        // Reveal animation pada kartu produk
+                        next.querySelectorAll('.reveal').forEach(el => el.classList.add('is-visible'));
+                    } catch (err) {
+                        if (err.name === 'AbortError') return; // user pindah klik
+                        // Fallback hard nav supaya user tidak terjebak
+                        window.location.href = url;
+                    } finally {
+                        if (pending === ctrl) pending = null;
+                    }
+                }
+
+                // Klik pada pill kategori / sub kategori
+                document.addEventListener('click', function (e) {
+                    const a = e.target.closest('#' + REGION_ID + ' .filter-pills a.pill, #' + REGION_ID + ' .filter-group-label a');
+                    if (! a) return;
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // biarkan buka tab baru
+                    if (a.target === '_blank') return;
+                    e.preventDefault();
+                    loadCatalog(a.href);
+                });
+
+                // Perubahan sort (pakai onchange="this.form.submit()" di template)
+                document.addEventListener('submit', function (e) {
+                    const form = e.target.closest('#' + REGION_ID + ' .toolbar-row form');
+                    if (! form) return;
+                    e.preventDefault();
+                    const params = new URLSearchParams(new FormData(form));
+                    const action = form.getAttribute('action') || window.location.pathname;
+                    loadCatalog(action + (params.toString() ? '?' + params.toString() : ''));
+                });
+
+                // Tombol back/forward browser
+                window.addEventListener('popstate', function () {
+                    loadCatalog(window.location.href, { skipPushState: true });
+                });
+            })();
+        </script>
+    @endpush
 </x-layouts.storefront>

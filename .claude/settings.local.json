@@ -52,7 +52,31 @@
       "Bash(curl -s -c f:/Project/spht.jujun/cookies.txt -b f:/Project/spht.jujun/cookies.txt \"http://127.0.0.1:8765/login\" -o login-page.html)",
       "Bash(curl -s -c f:/Project/spht.jujun/cookies.txt \"http://127.0.0.1:8765/login\" -o login-page.html)",
       "Bash(grep -rn \"storage/'.\\\\$\" app/Models)",
-      "Bash(cmd //c \"dir f:\\\\Project\\\\spht.jujun\\\\public\\\\uploads\\\\ktp /a\")"
+      "Bash(cmd //c \"dir f:\\\\Project\\\\spht.jujun\\\\public\\\\uploads\\\\ktp /a\")",
+      "Bash(php -l f:/Project/spht.jujun/app/Http/Controllers/Petani/ProdukController.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Models/Product.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Models/ProductImage.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Http/Controllers/KatalogController.php)",
+      "Bash(php -r 'require '\\\\''f:/Project/spht.jujun/vendor/autoload.php'\\\\''; $app = require '\\\\''f:/Project/spht.jujun/bootstrap/app.php'\\\\''; $kernel = $app->make\\(Illuminate\\\\Contracts\\\\Http\\\\Kernel::class\\); $req = Illuminate\\\\Http\\\\Request::create\\('\\\\''/katalog'\\\\'','\\\\''GET'\\\\''\\); $res = $kernel->handle\\($req\\); echo '\\\\''status='\\\\''.$res->getStatusCode\\(\\).PHP_EOL; echo '\\\\''has-region='\\\\''.\\(strpos\\($res->getContent\\(\\), '\\\\''id=\"catalog-region\"'\\\\''\\) !== false ? '\\\\''yes'\\\\'' : '\\\\''no'\\\\''\\).PHP_EOL;')",
+      "Bash(grep -nE 'badgeClass|status->label|\\\\$order->code|status-badge' f:/Project/spht.jujun/resources/views/pages/pelanggan/pesanan/index.blade.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Enums/PaymentMethod.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Services/CheckoutSummaryService.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Http/Controllers/Pelanggan/PembayaranController.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Http/Controllers/Pelanggan/CheckoutController.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Models/Order.php)",
+      "Bash(grep -nE 'email_verified_at|protected.*\\\\$fillable|hasVerifiedEmail' f:/Project/spht.jujun/app/Models/User.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Http/Controllers/Admin/PenggunaController.php)",
+      "Bash(php -r 'extract\\(['\\\\''user'\\\\'' => null]\\); ob_start\\(\\); try { include '\\\\''f:/Project/spht.jujun/resources/views/pages/partials/dashboard-petani.blade.php'\\\\''; echo '\\\\''rendered'\\\\''; } catch\\(\\\\Throwable $e\\) { echo '\\\\''ERR: '\\\\''.$e->getMessage\\(\\).'\\\\'' @line '\\\\''.$e->getLine\\(\\); } ob_end_clean\\(\\);')",
+      "Bash(php -l f:/Project/spht.jujun/storage/framework/views/35d416ff924e2578d513799789304839.php)",
+      "Bash(php -l f:/Project/spht.jujun/storage/framework/views/66978b2ff14288ab8550b5c7861d0ffe.php)",
+      "Bash(awk 'NR>=655 && NR<=665' f:/Project/spht.jujun/storage/framework/views/35d416ff924e2578d513799789304839.php)",
+      "Bash(php -r '$src = file_get_contents\\('\\\\''f:/Project/spht.jujun/storage/framework/views/35d416ff924e2578d513799789304839.php'\\\\''\\); $tokens = @token_get_all\\($src\\); foreach\\($tokens as $t\\){ if \\(is_array\\($t\\)\\) echo token_name\\($t[0]\\).'\\\\'': line '\\\\''.$t[2].'\\\\'' | '\\\\''.substr\\($t[1],0,40\\).PHP_EOL; }')",
+      "Read(//f/Project/spht.jujun/**)",
+      "Bash(cd /tmp)",
+      "Bash(cp \"f:/Project/spht.jujun/storage/framework/views/35d416ff924e2578d513799789304839.php\" /tmp/x.php)",
+      "Read(//tmp/**)",
+      "Bash(php -r '$tokens = token_get_all\\(file_get_contents\\('\\\\''/tmp/x.php'\\\\''\\)\\); $stack=[]; foreach\\($tokens as $t\\){ if\\(!is_array\\($t\\)\\) continue; $n = token_name\\($t[0]\\); if\\(in_array\\($n, ['\\\\''T_IF'\\\\'','\\\\''T_FOREACH'\\\\'','\\\\''T_FOR'\\\\'','\\\\''T_WHILE'\\\\'','\\\\''T_SWITCH'\\\\'']\\)\\) $stack[]=$n.'\\\\'':'\\\\''.$t[2]; if\\(in_array\\($n, ['\\\\''T_ENDIF'\\\\'','\\\\''T_ENDFOREACH'\\\\'','\\\\''T_ENDFOR'\\\\'','\\\\''T_ENDWHILE'\\\\'','\\\\''T_ENDSWITCH'\\\\'']\\)\\){ array_pop\\($stack\\); } } echo '\\\\''unclosed: '\\\\''; print_r\\($stack\\);')",
+      "Bash(php -r '$tokens = token_get_all\\(file_get_contents\\('\\\\''f:/Project/spht.jujun/storage/framework/views/35d416ff924e2578d513799789304839.php'\\\\''\\)\\); $stack=[]; foreach\\($tokens as $t\\){ if\\(!is_array\\($t\\)\\) continue; $n = token_name\\($t[0]\\); if\\(in_array\\($n, ['\\\\''T_IF'\\\\'','\\\\''T_FOREACH'\\\\'','\\\\''T_FOR'\\\\'','\\\\''T_WHILE'\\\\'','\\\\''T_SWITCH'\\\\'']\\)\\) $stack[]=$n.'\\\\'':'\\\\''.$t[2]; if\\(in_array\\($n, ['\\\\''T_ENDIF'\\\\'','\\\\''T_ENDFOREACH'\\\\'','\\\\''T_ENDFOR'\\\\'','\\\\''T_ENDWHILE'\\\\'','\\\\''T_ENDSWITCH'\\\\'']\\)\\){ array_pop\\($stack\\); } } echo '\\\\''unclosed: '\\\\''; print_r\\($stack\\);')"
     ]
   }
 }

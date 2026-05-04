@@ -11,20 +11,45 @@
         ->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
 
     // Hitung kelengkapan profil — feedback ringan, tidak memblokir aksi apapun.
+    // Setiap entri punya target (anchor field atau route) supaya item yang
+    // belum lengkap bisa diklik langsung ke tempat ngisinya.
     $checks = [
-        'Nama'      => filled($user->name),
-        'Email'     => filled($user->email),
-        'No. HP'    => filled($user->no_hp),
-        'Wilayah'   => $user->hasCompleteAddress(),
-        'Alamat'    => filled($user->alamat),
+        ['label' => 'Nama lengkap',  'hint' => 'Tampil di toko / pesanan',     'done' => filled($user->name),  'href' => '#name',  'external' => false],
+        ['label' => 'Email aktif',   'hint' => 'Untuk notifikasi & login',     'done' => filled($user->email), 'href' => '#email', 'external' => false],
+        ['label' => 'Nomor telepon', 'hint' => 'Format 08xx-xxxx-xxxx',        'done' => filled($user->no_hp), 'href' => '#no_hp', 'external' => false],
     ];
-    if ($user->role === UserRole::Petani) {
-        $checks['Nama Usaha'] = filled($user->nama_usaha);
-        $checks['NIK']        = filled($user->nik);
+
+    if ($isPelanggan) {
+        // Pelanggan menyimpan alamat di tabel `addresses`. Kolom users.alamat
+        // tidak dipakai role ini, jadi tidak perlu dicek.
+        $checks[] = [
+            'label'    => 'Alamat pengiriman',
+            'hint'     => 'Minimal satu alamat tersimpan',
+            'done'     => $user->addresses()->exists(),
+            'href'     => '#sec-identitas',
+            'external' => false,
+        ];
+    } elseif ($user->role === UserRole::Petani) {
+        $hasWilayah = filled($user->province_id) && filled($user->city_id) && filled($user->district_id);
+        $checks[] = ['label' => 'Wilayah toko',     'hint' => 'Provinsi · kota · kecamatan',    'done' => $hasWilayah,                  'href' => '#province_id',  'external' => false];
+        $checks[] = ['label' => 'Alamat detail',    'hint' => 'Jalan, RT/RW, patokan',          'done' => filled($user->alamat),        'href' => '#alamat',       'external' => false];
+
+        // Nama usaha & NIK biasanya diisi via halaman Verifikasi Akun. Kalau
+        // admin sudah memverifikasi (is_verified = true), kita anggap sudah
+        // sah meski kolomnya kosong — admin telah men-confirm secara manual.
+        if (! $user->is_verified) {
+            $checks[] = ['label' => 'Nama usaha',     'hint' => 'Diisi di halaman Verifikasi',  'done' => filled($user->nama_usaha), 'href' => route('petani.verifikasi.index'), 'external' => true];
+            $checks[] = ['label' => 'NIK (16 digit)', 'hint' => 'Diisi di halaman Verifikasi',  'done' => filled($user->nik),        'href' => route('petani.verifikasi.index'), 'external' => true];
+        } else {
+            // Sudah diverifikasi admin → tampilkan sebagai item ✓ (informasional).
+            $checks[] = ['label' => 'Verifikasi akun', 'hint' => 'Sudah diverifikasi admin',    'done' => true,                       'href' => route('petani.verifikasi.index'), 'external' => true];
+        }
     }
-    $totalChecks = count($checks);
-    $doneChecks  = collect($checks)->filter()->count();
-    $progress    = $totalChecks ? (int) round($doneChecks / $totalChecks * 100) : 0;
+
+    $totalChecks   = count($checks);
+    $doneChecks    = collect($checks)->where('done', true)->count();
+    $progress      = $totalChecks ? (int) round($doneChecks / $totalChecks * 100) : 0;
+    $missingChecks = collect($checks)->where('done', false)->values();
 
     [$roleChip, $roleIcon] = match ($user->role) {
         UserRole::Petani    => ['Petani Mitra',  'plant-2'],
@@ -82,7 +107,7 @@
             }
             .pf-progress{
                 background:#fff;border:1px solid var(--border);border-radius: var(--radius);
-                padding:.85rem 1rem;min-width:240px;
+                padding:.85rem 1rem;min-width:280px;max-width:360px;
             }
             .pf-progress .bar{ height:8px;border-radius:99px;background:#eef2f7;overflow:hidden; }
             .pf-progress .bar > span{
@@ -90,8 +115,63 @@
                 background: linear-gradient(90deg,var(--brand-500),var(--brand-700));
                 transition: width .6s ease;
             }
+            .pf-progress .bar.is-full > span{
+                background: linear-gradient(90deg,#10b981,#16a34a);
+            }
             .pf-progress .label{ font-size:.78rem;color: var(--muted);font-weight:600; }
             .pf-progress .pct{ font-size:1.05rem;font-weight:800;color: var(--ink); }
+            .pf-progress .pct.is-full{ color: var(--brand-700); }
+
+            /* Checklist kelengkapan */
+            .pf-checklist{
+                list-style:none;padding:0;margin:.6rem 0 0;
+                display:flex;flex-direction:column;gap:.25rem;
+            }
+            .pf-check{
+                display:flex;align-items:center;gap:.5rem;
+                font-size:.82rem;line-height:1.3;
+                padding:.3rem .15rem;border-radius:.4rem;
+            }
+            .pf-check .ico{
+                width:18px;height:18px;flex-shrink:0;
+                display:inline-flex;align-items:center;justify-content:center;
+                font-size:1rem;
+            }
+            .pf-check.is-done       { color: var(--ink-2); }
+            .pf-check.is-done .ico  { color:#16a34a; }
+            .pf-check.is-done .lbl  { text-decoration: line-through; text-decoration-color: rgba(22,163,74,.45); }
+            .pf-check.is-pending    { color: var(--ink); background: #fff7ed; }
+            .pf-check.is-pending .ico { color:#ea580c; }
+            .pf-check .lbl{ flex:1;font-weight:600; }
+            .pf-check .hint{ color: var(--muted);font-weight:400;font-size:.74rem; }
+            .pf-check .link{
+                font-size:.72rem;font-weight:700;text-decoration:none;
+                color: var(--brand-700);background: var(--brand-50);
+                border:1px solid var(--brand-200);border-radius:99px;
+                padding:.1rem .55rem;white-space:nowrap;
+                display:inline-flex;align-items:center;gap:.2rem;
+            }
+            .pf-check .link:hover{ background: var(--brand-100); }
+            .pf-check .link i{ font-size:.85rem; }
+            .pf-checklist.is-collapsed{ display:none; }
+            .pf-toggle{
+                background:transparent;border:0;padding:.25rem 0;
+                font-size:.74rem;font-weight:700;color: var(--brand-700);
+                display:inline-flex;align-items:center;gap:.25rem;cursor:pointer;
+                margin-top:.4rem;
+            }
+            .pf-toggle:hover{ text-decoration: underline; }
+
+            /* Highlight efek saat anchor field di-klik */
+            .pf-highlight{
+                animation: pfHighlight 1.4s ease;
+                box-shadow: 0 0 0 3px rgba(16,185,129,.35) !important;
+            }
+            @keyframes pfHighlight {
+                0%   { box-shadow: 0 0 0 0   rgba(16,185,129,.55); }
+                40%  { box-shadow: 0 0 0 8px rgba(16,185,129,.35); }
+                100% { box-shadow: 0 0 0 3px rgba(16,185,129,0);   }
+            }
 
             /* SIDE NAV */
             .pf-side{
@@ -212,13 +292,79 @@
                 </div>
             </div>
 
-            <div class="pf-progress text-end">
+            <div class="pf-progress">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="label">Kelengkapan profil</span>
-                    <span class="pct">{{ $progress }}%</span>
+                    <span class="pct {{ $progress === 100 ? 'is-full' : '' }}">{{ $progress }}%</span>
                 </div>
-                <div class="bar"><span style="width: {{ $progress }}%"></span></div>
-                <div class="text-secondary small mt-2">{{ $doneChecks }} dari {{ $totalChecks }} item terisi</div>
+                <div class="bar {{ $progress === 100 ? 'is-full' : '' }}"><span style="width: {{ $progress }}%"></span></div>
+
+                @if ($progress === 100)
+                    <div class="text-success small fw-semibold mt-2">
+                        <i class="ti ti-circle-check-filled me-1"></i>Semua data sudah lengkap.
+                    </div>
+                @else
+                    <div class="text-secondary small mt-2">
+                        Tinggal {{ $totalChecks - $doneChecks }} dari {{ $totalChecks }} item lagi.
+                    </div>
+                @endif
+
+                {{-- Tampilkan otomatis daftar yang BELUM lengkap; yang sudah selesai
+                     disembunyikan agar fokus user pada yang masih harus diisi.
+                     Tombol toggle membuka daftar lengkap (termasuk yang sudah ✓). --}}
+                @if ($missingChecks->isNotEmpty())
+                    <ul class="pf-checklist">
+                        @foreach ($missingChecks as $c)
+                            <li class="pf-check is-pending">
+                                <span class="ico"><i class="ti ti-alert-circle-filled"></i></span>
+                                <span class="lbl">
+                                    {{ $c['label'] }}
+                                    <span class="hint d-block">{{ $c['hint'] }}</span>
+                                </span>
+                                <a href="{{ $c['href'] }}"
+                                   class="link"
+                                   @if (! $c['external']) data-pf-jump="{{ $c['href'] }}" @endif>
+                                    @if ($c['external'])
+                                        <i class="ti ti-external-link"></i>Buka
+                                    @else
+                                        <i class="ti ti-arrow-right"></i>Lengkapi
+                                    @endif
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                <button type="button" class="pf-toggle" data-pf-toggle-checklist
+                        aria-expanded="false" aria-controls="pf-full-checklist">
+                    <i class="ti ti-list-details"></i>
+                    <span class="label-text">Lihat semua ({{ $doneChecks }}/{{ $totalChecks }} ✓)</span>
+                </button>
+
+                <ul class="pf-checklist is-collapsed" id="pf-full-checklist" data-pf-full-list>
+                    @foreach ($checks as $c)
+                        <li class="pf-check {{ $c['done'] ? 'is-done' : 'is-pending' }}">
+                            <span class="ico">
+                                <i class="ti ti-{{ $c['done'] ? 'circle-check-filled' : 'alert-circle-filled' }}"></i>
+                            </span>
+                            <span class="lbl">
+                                {{ $c['label'] }}
+                                <span class="hint d-block">{{ $c['hint'] }}</span>
+                            </span>
+                            @if (! $c['done'])
+                                <a href="{{ $c['href'] }}"
+                                   class="link"
+                                   @if (! $c['external']) data-pf-jump="{{ $c['href'] }}" @endif>
+                                    @if ($c['external'])
+                                        <i class="ti ti-external-link"></i>Buka
+                                    @else
+                                        <i class="ti ti-arrow-right"></i>Lengkapi
+                                    @endif
+                                </a>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
             </div>
         </div>
     </div>
@@ -288,6 +434,42 @@
                         entries.forEach(en => { if (en.isIntersecting) setActive(en.target.id); });
                     }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
                     sections.forEach(s => s && io.observe(s));
+                }
+
+                // Tombol "Lengkapi" pada checklist: scroll ke field, fokus, beri
+                // highlight singkat. Hanya untuk anchor lokal — link eksternal
+                // (mis. ke verifikasi petani) dibiarkan jalan normal.
+                document.querySelectorAll('[data-pf-jump]').forEach(a => {
+                    a.addEventListener('click', e => {
+                        const target = a.dataset.pfJump || '';
+                        if (! target.startsWith('#')) return; // biarkan navigasi normal
+                        const el = document.querySelector(target);
+                        if (! el) return;
+                        e.preventDefault();
+                        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+                        // Focus + highlight setelah animasi scroll selesai
+                        setTimeout(() => {
+                            if (typeof el.focus === 'function') {
+                                try { el.focus({ preventScroll: true }); } catch (_) { el.focus(); }
+                            }
+                            el.classList.add('pf-highlight');
+                            setTimeout(() => el.classList.remove('pf-highlight'), 1400);
+                        }, 350);
+                    });
+                });
+
+                // Toggle daftar lengkap kelengkapan profil
+                const toggleBtn  = document.querySelector('[data-pf-toggle-checklist]');
+                const fullList   = document.querySelector('[data-pf-full-list]');
+                if (toggleBtn && fullList) {
+                    toggleBtn.addEventListener('click', () => {
+                        const collapsed = fullList.classList.toggle('is-collapsed');
+                        toggleBtn.setAttribute('aria-expanded', String(! collapsed));
+                        const lbl = toggleBtn.querySelector('.label-text');
+                        if (lbl) lbl.textContent = collapsed
+                            ? lbl.textContent.replace('Sembunyikan', 'Lihat semua')
+                            : lbl.textContent.replace('Lihat semua', 'Sembunyikan');
+                    });
                 }
             })();
         </script>

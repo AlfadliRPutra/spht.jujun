@@ -6,13 +6,6 @@
 @endphp
 
 <x-layouts.app :title="$title" :active="$active">
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible" role="alert">
-            {{ session('success') }}
-            <a class="btn-close" data-bs-dismiss="alert"></a>
-        </div>
-    @endif
-
     <div class="mb-3">
         <a href="{{ route('admin.toko.index') }}" class="btn btn-link text-secondary ps-0">
             <i class="ti ti-arrow-left me-1"></i> Kembali
