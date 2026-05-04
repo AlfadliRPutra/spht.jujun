@@ -77,4 +77,58 @@ class LaporanController extends Controller
             'perPage'        => $perPage,
         ]);
     }
+
+    public function pdf(Request $request)
+    {
+        $sortOptions = array_map(fn ($v) => $v[2], self::SORT_MAP);
+        $sort = \array_key_exists($request->input('sort'), self::SORT_MAP) ? $request->input('sort') : 'latest';
+        [$sortCol, $sortDir] = self::SORT_MAP[$sort];
+
+        $petaniId = $request->user()->id;
+
+        $baseQuery = fn () => Order::query()
+            ->whereHas('items.product', fn ($q) => $q->where('user_id', $petaniId))
+            ->when($request->filled('status'),    fn ($q) => $q->where('status', $request->input('status')))
+            ->when($request->filled('date_from'), fn ($q) => $q->whereDate('created_at', '>=', $request->input('date_from')))
+            ->when($request->filled('date_to'),   fn ($q) => $q->whereDate('created_at', '<=', $request->input('date_to')));
+
+        // Get all items without pagination for PDF
+        $items = (clone $baseQuery())
+            ->with(['user', 'items.product'])
+            ->orderBy($sortCol, $sortDir)
+            ->get();
+
+        $statusCounts = [];
+        foreach (OrderStatus::cases() as $s) {
+            $statusCounts[$s->value] = (clone $baseQuery())->where('status', $s)->count();
+        }
+
+        $completedOrders = (clone $baseQuery())
+            ->where('status', OrderStatus::Selesai)
+            ->with('items.product')
+            ->get();
+
+        $totalPendapatan = 0;
+        $totalTerjual = 0;
+        foreach ($completedOrders as $order) {
+            foreach ($order->items as $item) {
+                if ($item->product?->user_id === $petaniId) {
+                    $totalPendapatan += (float) $item->harga * $item->jumlah;
+                    $totalTerjual   += $item->jumlah;
+                }
+            }
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pages.petani.laporan.pdf', [
+            'items'          => $items,
+            'totalPendapatan'=> $totalPendapatan,
+            'totalTerjual'   => $totalTerjual,
+            'totalTransaksi' => array_sum($statusCounts),
+            'petani'         => $request->user(),
+            'dateFrom'       => $request->input('date_from'),
+            'dateTo'         => $request->input('date_to'),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('laporan-petani.pdf');
+    }
 }

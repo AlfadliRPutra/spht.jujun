@@ -427,6 +427,11 @@
                         @endif
                     </div>
                     <div class="actions">
+                        @if (in_array($order->status, [OrderStatus::Dibayar, OrderStatus::Dikirim, OrderStatus::Selesai], true))
+                            <a href="{{ route('pelanggan.pesanan.invoice', $order) }}" target="_blank" class="btn btn-outline-info btn-sm">
+                                <i class="ti ti-receipt me-1"></i> Cetak Invoice
+                            </a>
+                        @endif
                         @if ($order->status === OrderStatus::Pending && $order->metode_pembayaran?->usesMidtrans() && ! $order->isPaymentExpired())
                             @if ($order->expires_at)
                                 <span class="countdown-tag" data-pay-countdown="{{ $order->expires_at->toIso8601String() }}">

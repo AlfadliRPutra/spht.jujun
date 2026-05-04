@@ -15,11 +15,9 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             HeroSeeder::class,
             ShippingRateSeeder::class,
+            CategorySeeder::class,
+            ProductSeeder::class,
             OrderSeeder::class,
         ]);
-
-        // CategorySeeder & ProductSeeder dijalankan manual:
-        //   php artisan db:seed --class=CategorySeeder
-        //   php artisan db:seed --class=ProductSeeder
     }
 }

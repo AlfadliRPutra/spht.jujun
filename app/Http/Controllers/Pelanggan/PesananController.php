@@ -88,4 +88,26 @@ class PesananController extends Controller
 
         return back()->with('success', 'Terima kasih! Pesanan #'.$order->id.' telah ditandai diterima.');
     }
+
+    public function invoice(Request $request, Order $order)
+    {
+        abort_unless($order->user_id === $request->user()->id, 403);
+
+        if (in_array($order->status, [OrderStatus::Pending, OrderStatus::Batal], true)) {
+            abort(404);
+        }
+
+        $order->load(['user', 'items.product.user', 'shippings']);
+
+        // Group items by store for Pelanggan view
+        $groupedItems = $order->items->groupBy(fn($item) => $item->product->user_id ?? 0);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', [
+            'order'        => $order,
+            'groupedItems' => $groupedItems,
+            'role'         => 'pelanggan'
+        ])->setPaper([0, 0, 226.77, 800], 'portrait'); // Narrow 80mm width, longer height
+
+        return $pdf->stream('invoice-pesanan-'.$order->id.'.pdf');
+    }
 }

@@ -61,11 +61,13 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
         Route::prefix('pesanan')->name('pesanan.')->group(function () {
             Route::get('/',                     [PetaniPesananController::class, 'index'])->name('index');
             Route::get('/{order}/resi',         [PetaniPesananController::class, 'resi'])->name('resi');
+            Route::get('/{order}/invoice',      [PetaniPesananController::class, 'invoice'])->name('invoice');
             Route::post('/{order}/ship',        [PetaniPesananController::class, 'ship'])->name('ship');
             Route::post('/{order}/complete',    [PetaniPesananController::class, 'complete'])->name('complete');
             Route::post('/{order}/cancel',      [PetaniPesananController::class, 'cancel'])->name('cancel');
         });
         Route::get('/laporan', [PetaniLaporanController::class, 'index'])->name('laporan.index');
+        Route::get('/laporan/pdf', [PetaniLaporanController::class, 'pdf'])->name('laporan.pdf');
 
         Route::prefix('verifikasi')->name('verifikasi.')->group(function () {
             Route::get('/',         [PetaniVerifikasiController::class, 'index'])->name('index');
@@ -95,6 +97,7 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
         Route::post('/pembayaran/{order}/sync',       [PelangganPembayaranController::class, 'sync'])->name('pembayaran.sync');
 
         Route::get('/pesanan',                          [PelangganPesananController::class, 'index'])->name('pesanan.index');
+        Route::get('/pesanan/{order}/invoice',          [PelangganPesananController::class, 'invoice'])->name('pesanan.invoice');
         Route::post('/pesanan/{order}/diterima',        [PelangganPesananController::class, 'confirmReceived'])->name('pesanan.diterima');
     });
 

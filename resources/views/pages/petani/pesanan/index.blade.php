@@ -67,6 +67,10 @@
                                        class="btn btn-sm btn-outline-success" title="Cetak resi pengiriman">
                                         <i class="ti ti-printer"></i>
                                     </a>
+                                    <a href="{{ route('petani.pesanan.invoice', $order) }}" target="_blank" rel="noopener"
+                                       class="btn btn-sm btn-outline-info" title="Cetak Invoice">
+                                        <i class="ti ti-receipt"></i>
+                                    </a>
                                 @endif
                                 @if ($order->status === OrderStatus::Dibayar)
                                     <form action="{{ route('petani.pesanan.ship', $order) }}" method="POST" class="d-inline"
@@ -206,6 +210,9 @@
                         @if (in_array($order->status, [OrderStatus::Dibayar, OrderStatus::Dikirim, OrderStatus::Selesai], true))
                             <a href="{{ route('petani.pesanan.resi', $order) }}" target="_blank" rel="noopener" class="btn btn-outline-success">
                                 <i class="ti ti-printer me-1"></i> Cetak Resi
+                            </a>
+                            <a href="{{ route('petani.pesanan.invoice', $order) }}" target="_blank" rel="noopener" class="btn btn-outline-info">
+                                <i class="ti ti-receipt me-1"></i> Cetak Invoice
                             </a>
                         @endif
                         @if ($order->status === OrderStatus::Dibayar)

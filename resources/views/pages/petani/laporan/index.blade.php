@@ -67,8 +67,15 @@
     </div>
 
     <div class="card">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title">Riwayat Transaksi ({{ $items->total() }})</h3>
+            <a href="{{ route('petani.laporan.pdf', request()->all()) }}" target="_blank" class="btn btn-primary d-none d-sm-inline-block">
+                <i class="ti ti-file-type-pdf me-2"></i>
+                Cetak PDF
+            </a>
+            <a href="{{ route('petani.laporan.pdf', request()->all()) }}" target="_blank" class="btn btn-primary btn-icon d-sm-none" aria-label="Cetak PDF">
+                <i class="ti ti-file-type-pdf"></i>
+            </a>
         </div>
 
         <x-table-toolbar

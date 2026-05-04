@@ -117,6 +117,32 @@ class PesananController extends Controller
         ]);
     }
 
+    public function invoice(Request $request, Order $order)
+    {
+        $petaniId = $request->user()->id;
+        $this->authorizeOrder($order, $petaniId);
+
+        if (in_array($order->status, [OrderStatus::Pending, OrderStatus::Batal], true)) {
+            abort(404);
+        }
+
+        $order->load(['user', 'items.product', 'shippings']);
+
+        $petani   = $request->user();
+        $ownItems = $order->items->filter(fn ($i) => $i->product?->user_id === $petaniId);
+        $shipping = $order->shippings->firstWhere('store_id', $petaniId);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', [
+            'order'    => $order,
+            'petani'   => $petani,
+            'ownItems' => $ownItems,
+            'shipping' => $shipping,
+            'role'     => 'petani'
+        ])->setPaper([0, 0, 226.77, 600], 'portrait'); // 80mm width roughly
+
+        return $pdf->stream('invoice-pesanan-'.$order->id.'.pdf');
+    }
+
     public function cancel(Request $request, Order $order): RedirectResponse
     {
         $this->authorizeOrder($order, $request->user()->id);
