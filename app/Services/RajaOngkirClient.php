@@ -102,34 +102,41 @@ class RajaOngkirClient
             'rajaongkir:cost:%s:%s:%s:%d',
             $originId, $destinationId, $courier, $weightGram,
         );
-        $ttl = (int) config('services.rajaongkir.cache_ttl', 21600);
 
-        return Cache::remember($cacheKey, $ttl, function () use ($originId, $destinationId, $weightGram, $courier) {
-            try {
-                $response = Http::withHeaders(['key' => $this->key()])
-                    ->timeout((int) config('services.rajaongkir.timeout', 12))
-                    ->asForm()
-                    ->post($this->baseUrl().'/calculate/domestic-cost', [
-                        'origin'      => $originId,
-                        'destination' => $destinationId,
-                        'weight'      => $weightGram,
-                        'courier'     => $courier,
-                    ]);
+        // Cache hanya hasil sukses; failure tidak di-cache.
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
+        }
 
-                if (! $response->successful()) {
-                    Log::warning('RajaOngkir /cost non-2xx', [
-                        'status' => $response->status(),
-                        'body'   => mb_substr((string) $response->body(), 0, 500),
-                    ]);
-                    return null;
-                }
+        try {
+            $response = Http::withHeaders(['key' => $this->key()])
+                ->timeout((int) config('services.rajaongkir.timeout', 12))
+                ->asForm()
+                ->post($this->baseUrl().'/calculate/domestic-cost', [
+                    'origin'      => $originId,
+                    'destination' => $destinationId,
+                    'weight'      => $weightGram,
+                    'courier'     => $courier,
+                ]);
 
-                return $this->parseCostResponse($response, $courier);
-            } catch (\Throwable $e) {
-                Log::warning('RajaOngkir /cost exception', ['error' => $e->getMessage()]);
+            if (! $response->successful()) {
+                Log::warning('RajaOngkir /cost non-2xx', [
+                    'status' => $response->status(),
+                    'body'   => mb_substr((string) $response->body(), 0, 500),
+                ]);
                 return null;
             }
-        });
+
+            $parsed = $this->parseCostResponse($response, $courier);
+            if (is_array($parsed)) {
+                Cache::put($cacheKey, $parsed, (int) config('services.rajaongkir.cache_ttl', 21600));
+            }
+            return $parsed;
+        } catch (\Throwable $e) {
+            Log::warning('RajaOngkir /cost exception', ['error' => $e->getMessage()]);
+            return null;
+        }
     }
 
     /**
@@ -152,49 +159,61 @@ class RajaOngkirClient
             'rajaongkir:cost-all:%s:%s:%s:%d',
             $originId, $destinationId, $courier, $weightGram,
         );
-        $ttl = (int) config('services.rajaongkir.cache_ttl', 21600);
 
-        return Cache::remember($cacheKey, $ttl, function () use ($originId, $destinationId, $weightGram, $courier) {
-            try {
-                $response = Http::withHeaders(['key' => $this->key()])
-                    ->timeout((int) config('services.rajaongkir.timeout', 12))
-                    ->asForm()
-                    ->post($this->baseUrl().'/calculate/domestic-cost', [
-                        'origin'      => $originId,
-                        'destination' => $destinationId,
-                        'weight'      => $weightGram,
-                        'courier'     => $courier,
-                    ]);
+        // Hanya hasil sukses yang di-cache — kegagalan TIDAK di-cache supaya
+        // begitu kuota Komerce reset, request berikutnya langsung hit API
+        // ulang (bukan disuapi cache kosong selama 6 jam).
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
+        }
 
-                if (! $response->successful()) {
-                    Log::warning('RajaOngkir /cost non-2xx', [
-                        'status'  => $response->status(),
-                        'courier' => $courier,
-                        'body'    => mb_substr((string) $response->body(), 0, 500),
-                    ]);
-                    return [];
-                }
+        try {
+            $response = Http::withHeaders(['key' => $this->key()])
+                ->timeout((int) config('services.rajaongkir.timeout', 12))
+                ->asForm()
+                ->post($this->baseUrl().'/calculate/domestic-cost', [
+                    'origin'      => $originId,
+                    'destination' => $destinationId,
+                    'weight'      => $weightGram,
+                    'courier'     => $courier,
+                ]);
 
-                $data = (array) ($response->json('data') ?? []);
-                $courierName = $this->courierName($courier);
-
-                return collect($data)
-                    ->map(fn (array $row) => [
-                        'code'         => strtolower((string) ($row['code'] ?? $courier)),
-                        'courier_name' => (string) ($row['name'] ?? $courierName),
-                        'service'      => strtoupper((string) ($row['service'] ?? '')),
-                        'description'  => $row['description'] ?? null,
-                        'cost'         => (int) ($row['cost'] ?? 0),
-                        'etd'          => $row['etd'] ?? null,
-                    ])
-                    ->filter(fn ($s) => $s['cost'] > 0 && $s['service'] !== '')
-                    ->values()
-                    ->all();
-            } catch (\Throwable $e) {
-                Log::warning('RajaOngkir /cost exception', ['error' => $e->getMessage(), 'courier' => $courier]);
+            if (! $response->successful()) {
+                Log::warning('RajaOngkir /cost non-2xx', [
+                    'status'  => $response->status(),
+                    'courier' => $courier,
+                    'body'    => mb_substr((string) $response->body(), 0, 500),
+                ]);
                 return [];
             }
-        });
+
+            $data        = (array) ($response->json('data') ?? []);
+            $courierName = $this->courierName($courier);
+
+            $options = collect($data)
+                ->map(fn (array $row) => [
+                    'code'         => strtolower((string) ($row['code'] ?? $courier)),
+                    'courier_name' => (string) ($row['name'] ?? $courierName),
+                    'service'      => strtoupper((string) ($row['service'] ?? '')),
+                    'description'  => $row['description'] ?? null,
+                    'cost'         => (int) ($row['cost'] ?? 0),
+                    'etd'          => $row['etd'] ?? null,
+                ])
+                ->filter(fn ($s) => $s['cost'] > 0 && $s['service'] !== '')
+                ->values()
+                ->all();
+
+            // Hanya simpan ke cache kalau ada minimal satu service valid.
+            if (! empty($options)) {
+                Cache::put($cacheKey, $options, (int) config('services.rajaongkir.cache_ttl', 21600));
+            }
+
+            return $options;
+        } catch (\Throwable $e) {
+            Log::warning('RajaOngkir /cost exception', ['error' => $e->getMessage(), 'courier' => $courier]);
+            return [];
+        }
     }
 
     /**
