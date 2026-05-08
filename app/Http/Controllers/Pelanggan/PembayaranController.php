@@ -44,9 +44,19 @@ class PembayaranController extends Controller
                 PaymentMethod::Online->value,
                 PaymentMethod::Pickup->value,
             ])],
+            'shipping'       => ['nullable', 'array'],
+            'shipping.*'     => ['nullable', 'string', 'max:64'],
         ]);
 
         $paymentMethod = PaymentMethod::fromInput($data['payment_method'] ?? null);
+
+        // Selections kurir per toko: storeId(string) → "jne:REG"
+        $shippingSelections = [];
+        foreach ((array) ($data['shipping'] ?? []) as $storeId => $code) {
+            if (is_string($code) && trim($code) !== '') {
+                $shippingSelections[(string) $storeId] = $code;
+            }
+        }
 
         $user = $request->user();
         $cart = $user->cart()->with('items.product.petani')->first();
@@ -75,8 +85,9 @@ class PembayaranController extends Controller
         }
 
         // Hitung ulang ongkir per toko di server — pakai snapshot alamat terpilih
-        // & metode pengiriman yang dipilih (Pickup memaksa ongkir 0).
-        $checkout = $summary->build($cart, $user, $address->snapshot(), $paymentMethod);
+        // & metode pengiriman yang dipilih (Pickup memaksa ongkir 0). Selections
+        // kurir per toko diteruskan supaya server-side cost match dengan UI.
+        $checkout = $summary->build($cart, $user, $address->snapshot(), $paymentMethod, $shippingSelections);
 
         if ($checkout['has_blocked_store']) {
             return redirect()->route('pelanggan.checkout.index', [
@@ -135,16 +146,19 @@ class PembayaranController extends Controller
 
             // Catat rincian ongkir per toko sebagai snapshot (audit & tampilan invoice).
             foreach ($checkout['stores'] as $group) {
+                $shipInfo = $group['shipping'];
                 $order->shippings()->create([
                     'store_id'         => $group['store_id'],
                     'store_name'       => $group['store']->nama_usaha ?? $group['store']->name,
-                    'zone'             => $group['shipping']['zone'],
-                    'zone_label'       => $group['shipping']['zone_label'],
-                    'base_fee'         => $group['shipping']['base_fee'],
-                    'extra_fee_per_kg' => $group['shipping']['extra_fee_per_kg'],
-                    'base_weight_kg'   => $group['shipping']['base_weight_kg'],
-                    'total_weight_kg'  => $group['shipping']['total_weight_kg'],
-                    'shipping_cost'    => $group['shipping']['shipping_cost'],
+                    'zone'             => $shipInfo['zone'],
+                    'zone_label'       => $shipInfo['zone_label'],
+                    'courier'          => $shipInfo['courier']      ?? null,
+                    'service_code'     => $shipInfo['service_code'] ?? null,
+                    'base_fee'         => $shipInfo['base_fee'],
+                    'extra_fee_per_kg' => $shipInfo['extra_fee_per_kg'],
+                    'base_weight_kg'   => $shipInfo['base_weight_kg'],
+                    'total_weight_kg'  => $shipInfo['total_weight_kg'],
+                    'shipping_cost'    => $shipInfo['shipping_cost'],
                 ]);
             }
 

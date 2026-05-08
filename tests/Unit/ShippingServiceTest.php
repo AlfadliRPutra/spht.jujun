@@ -2,20 +2,13 @@
 
 namespace Tests\Unit;
 
+use App\Services\RajaOngkirClient;
 use App\Services\ShippingService;
 use InvalidArgumentException;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class ShippingServiceTest extends TestCase
 {
-    private ShippingService $service;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->service = new ShippingService();
-    }
-
     private function address(string $province, string $city, string $district): array
     {
         return [
@@ -25,102 +18,15 @@ class ShippingServiceTest extends TestCase
         ];
     }
 
-    public function test_same_district_uses_base_fee_when_under_base_weight(): void
-    {
-        $result = $this->service->calculateShipping(
-            $this->address('12', '1271', '127101'),
-            $this->address('12', '1271', '127101'),
-            3.0,
-        );
-
-        $this->assertTrue($result['available']);
-        $this->assertSame('same_district', $result['zone']);
-        $this->assertSame('Satu Kecamatan', $result['zone_label']);
-        $this->assertSame(10000, $result['base_fee']);
-        $this->assertSame(2000, $result['extra_fee_per_kg']);
-        $this->assertSame(3, $result['total_weight_kg']);
-        $this->assertSame(10000, $result['shipping_cost']);
-    }
-
-    public function test_same_district_adds_extra_fee_above_base_weight(): void
-    {
-        // 7 kg → 5 kg dasar + 2 kg ekstra × 2000 = 10000 + 4000 = 14000
-        $result = $this->service->calculateShipping(
-            $this->address('12', '1271', '127101'),
-            $this->address('12', '1271', '127101'),
-            7.0,
-        );
-
-        $this->assertSame(14000, $result['shipping_cost']);
-        $this->assertSame(7, $result['total_weight_kg']);
-    }
-
-    public function test_same_city_different_district(): void
-    {
-        // 6 kg → 20000 + 1 × 3000 = 23000
-        $result = $this->service->calculateShipping(
-            $this->address('12', '1271', '127101'),
-            $this->address('12', '1271', '127102'),
-            6.0,
-        );
-
-        $this->assertTrue($result['available']);
-        $this->assertSame('same_city', $result['zone']);
-        $this->assertSame(20000, $result['base_fee']);
-        $this->assertSame(3000, $result['extra_fee_per_kg']);
-        $this->assertSame(23000, $result['shipping_cost']);
-    }
-
-    public function test_same_province_different_city(): void
-    {
-        // 6 kg, beda kabupaten dalam provinsi yang sama → 25000 + 1 × 3000 = 28000
-        $result = $this->service->calculateShipping(
-            $this->address('12', '1271', '127101'),
-            $this->address('12', '1275', '127501'),
-            6.0,
-        );
-
-        $this->assertTrue($result['available']);
-        $this->assertSame('same_province', $result['zone']);
-        $this->assertSame(25000, $result['base_fee']);
-        $this->assertSame(3000, $result['extra_fee_per_kg']);
-        $this->assertSame(28000, $result['shipping_cost']);
-    }
-
-    public function test_outside_province_charges_fee(): void
-    {
-        // 6 kg, beda provinsi → 30000 + 1 × 3000 = 33000
-        $result = $this->service->calculateShipping(
-            $this->address('12', '1271', '127101'),
-            $this->address('32', '3273', '327301'),
-            6.0,
-        );
-
-        $this->assertTrue($result['available']);
-        $this->assertSame('outside_province', $result['zone']);
-        $this->assertSame(30000, $result['base_fee']);
-        $this->assertSame(3000, $result['extra_fee_per_kg']);
-        $this->assertSame(33000, $result['shipping_cost']);
-    }
-
-    public function test_decimal_weight_is_rounded_up(): void
-    {
-        // 5.1 kg → ceil = 6 kg → same_district: 10000 + 1 × 2000 = 12000
-        $result = $this->service->calculateShipping(
-            $this->address('12', '1271', '127101'),
-            $this->address('12', '1271', '127101'),
-            5.1,
-        );
-
-        $this->assertSame(6, $result['total_weight_kg']);
-        $this->assertSame(12000, $result['shipping_cost']);
-    }
-
     public function test_throws_when_address_missing_required_fields(): void
     {
         $this->expectException(InvalidArgumentException::class);
 
-        $this->service->calculateShipping(
+        $client = $this->createMock(RajaOngkirClient::class);
+        $client->method('isConfigured')->willReturn(true);
+
+        $svc = new ShippingService($client);
+        $svc->calculateShipping(
             ['province_id' => '12'],
             $this->address('12', '1271', '127101'),
             3.0,
@@ -131,10 +37,133 @@ class ShippingServiceTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        $this->service->calculateShipping(
+        $client = $this->createMock(RajaOngkirClient::class);
+        $client->method('isConfigured')->willReturn(true);
+
+        $svc = new ShippingService($client);
+        $svc->calculateShipping(
             $this->address('12', '1271', '127101'),
             $this->address('12', '1271', '127101'),
             0,
         );
+    }
+
+    public function test_returns_unavailable_when_api_unconfigured(): void
+    {
+        $client = $this->createMock(RajaOngkirClient::class);
+        $client->method('isConfigured')->willReturn(false);
+        $client->expects($this->never())->method('cost');
+
+        $svc = new ShippingService($client);
+        $r = $svc->calculateShipping(
+            $this->address('12', '1271', '127101'),
+            $this->address('12', '1271', '127101'),
+            3.0,
+        );
+
+        $this->assertFalse($r['available']);
+        $this->assertSame(0, $r['shipping_cost']);
+        $this->assertStringContainsString('RAJAONGKIR_API_KEY', $r['message']);
+    }
+
+    public function test_returns_unavailable_when_mapping_missing(): void
+    {
+        $client = $this->createMock(RajaOngkirClient::class);
+        $client->method('isConfigured')->willReturn(true);
+        $client->method('rajaongkirIdFor')->willReturn(null);
+        $client->expects($this->never())->method('cost');
+
+        $svc = new ShippingService($client);
+        $r = $svc->calculateShipping(
+            $this->address('p1', 'c1', 'd1'),
+            $this->address('p2', 'c2', 'd2'),
+            3.0,
+        );
+
+        $this->assertFalse($r['available']);
+        $this->assertSame(0, $r['shipping_cost']);
+        $this->assertStringContainsString('Mapping RajaOngkir', $r['message']);
+    }
+
+    public function test_returns_unavailable_when_api_returns_no_options(): void
+    {
+        $client = $this->createMock(RajaOngkirClient::class);
+        $client->method('isConfigured')->willReturn(true);
+        $client->method('rajaongkirIdFor')->willReturnCallback(fn ($id) => '999');
+        $client->method('costOptions')->willReturn([]);
+
+        $svc = new ShippingService($client);
+        $r = $svc->calculateShipping(
+            $this->address('p1', 'c1', 'd1'),
+            $this->address('p2', 'c2', 'd2'),
+            3.0,
+        );
+
+        $this->assertFalse($r['available']);
+        $this->assertStringContainsString('tidak merespons', $r['message']);
+    }
+
+    public function test_uses_rajaongkir_with_cheapest_option_by_default(): void
+    {
+        $client = $this->createMock(RajaOngkirClient::class);
+        $client->method('isConfigured')->willReturn(true);
+        $client->method('rajaongkirIdFor')->willReturnCallback(fn ($id) => match ($id) {
+            'cuid-jakarta' => '152',
+            'cuid-bandung' => '23',
+            default        => null,
+        });
+        $client->method('courierName')->willReturnCallback(fn ($c) => match (strtolower($c)) {
+            'jne'  => 'JNE',
+            'pos'  => 'POS Indonesia',
+            default => strtoupper($c),
+        });
+        $client->expects($this->once())
+            ->method('costOptions')
+            ->with('152', '23', 3000)
+            ->willReturn([
+                ['code' => 'jne', 'courier_name' => 'JNE',           'service' => 'REG', 'description' => 'Reguler', 'cost' => 22000, 'etd' => '1-2 day'],
+                ['code' => 'pos', 'courier_name' => 'POS Indonesia', 'service' => 'PAKET KILAT', 'description' => 'Pos', 'cost' => 18000, 'etd' => '2-4 day'],
+                ['code' => 'jne', 'courier_name' => 'JNE',           'service' => 'OKE', 'description' => 'Ekonomis', 'cost' => 19000, 'etd' => '2-3 day'],
+            ]);
+
+        $svc = new ShippingService($client);
+        $r = $svc->calculateShipping(
+            $this->address('prov-jkt', 'cuid-jakarta', 'dist-jkt'),
+            $this->address('prov-bdg', 'cuid-bandung', 'dist-bdg'),
+            3.0,
+        );
+
+        $this->assertTrue($r['available']);
+        $this->assertSame(ShippingService::ZONE_RAJAONGKIR, $r['zone']);
+        // Termurah dari list (POS 18000) yang dipilih sebagai default.
+        $this->assertSame(18000, $r['shipping_cost']);
+        $this->assertSame('pos', $r['courier']);
+        $this->assertSame('PAKET KILAT', $r['service_code']);
+        $this->assertCount(3, $r['options']);
+    }
+
+    public function test_uses_selected_option_when_specified(): void
+    {
+        $client = $this->createMock(RajaOngkirClient::class);
+        $client->method('isConfigured')->willReturn(true);
+        $client->method('rajaongkirIdFor')->willReturn('999');
+        $client->method('courierName')->willReturnCallback(fn ($c) => strtoupper($c));
+        $client->method('costOptions')->willReturn([
+            ['code' => 'jne', 'courier_name' => 'JNE', 'service' => 'REG', 'description' => null, 'cost' => 22000, 'etd' => '1-2 day'],
+            ['code' => 'pos', 'courier_name' => 'POS', 'service' => 'KILAT', 'description' => null, 'cost' => 18000, 'etd' => '2-4 day'],
+        ]);
+
+        $svc = new ShippingService($client);
+        $r = $svc->calculateShipping(
+            $this->address('p', 'c1', 'd'),
+            $this->address('p', 'c2', 'd'),
+            3.0,
+            'jne:REG', // pilih JNE walau bukan termurah
+        );
+
+        $this->assertTrue($r['available']);
+        $this->assertSame('jne', $r['courier']);
+        $this->assertSame('REG', $r['service_code']);
+        $this->assertSame(22000, $r['shipping_cost']);
     }
 }

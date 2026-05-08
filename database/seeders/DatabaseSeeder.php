@@ -14,7 +14,6 @@ class DatabaseSeeder extends Seeder
             DistrictSeeder::class,
             UserSeeder::class,
             HeroSeeder::class,
-            ShippingRateSeeder::class,
             CategorySeeder::class,
             ProductSeeder::class,
             OrderSeeder::class,

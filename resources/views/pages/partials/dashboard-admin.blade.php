@@ -329,13 +329,6 @@
             <div class="desc">{{ $totalKategori }} kategori</div>
         </div>
     </a>
-    <a href="{{ route('admin.tarif-ongkir.index') }}" class="ad-action">
-        <span class="ico"><i class="ti ti-truck-delivery"></i></span>
-        <div>
-            <div class="name">Tarif Ongkir</div>
-            <div class="desc">Atur per zona</div>
-        </div>
-    </a>
     <a href="{{ route('admin.hero.index') }}" class="ad-action">
         <span class="ico"><i class="ti ti-photo"></i></span>
         <div>

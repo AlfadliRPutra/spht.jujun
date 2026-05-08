@@ -13,6 +13,8 @@ class OrderShipping extends Model
         'store_name',
         'zone',
         'zone_label',
+        'courier',
+        'service_code',
         'base_fee',
         'extra_fee_per_kg',
         'base_weight_kg',

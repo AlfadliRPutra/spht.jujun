@@ -76,7 +76,26 @@
       "Bash(cp \"f:/Project/spht.jujun/storage/framework/views/35d416ff924e2578d513799789304839.php\" /tmp/x.php)",
       "Read(//tmp/**)",
       "Bash(php -r '$tokens = token_get_all\\(file_get_contents\\('\\\\''/tmp/x.php'\\\\''\\)\\); $stack=[]; foreach\\($tokens as $t\\){ if\\(!is_array\\($t\\)\\) continue; $n = token_name\\($t[0]\\); if\\(in_array\\($n, ['\\\\''T_IF'\\\\'','\\\\''T_FOREACH'\\\\'','\\\\''T_FOR'\\\\'','\\\\''T_WHILE'\\\\'','\\\\''T_SWITCH'\\\\'']\\)\\) $stack[]=$n.'\\\\'':'\\\\''.$t[2]; if\\(in_array\\($n, ['\\\\''T_ENDIF'\\\\'','\\\\''T_ENDFOREACH'\\\\'','\\\\''T_ENDFOR'\\\\'','\\\\''T_ENDWHILE'\\\\'','\\\\''T_ENDSWITCH'\\\\'']\\)\\){ array_pop\\($stack\\); } } echo '\\\\''unclosed: '\\\\''; print_r\\($stack\\);')",
-      "Bash(php -r '$tokens = token_get_all\\(file_get_contents\\('\\\\''f:/Project/spht.jujun/storage/framework/views/35d416ff924e2578d513799789304839.php'\\\\''\\)\\); $stack=[]; foreach\\($tokens as $t\\){ if\\(!is_array\\($t\\)\\) continue; $n = token_name\\($t[0]\\); if\\(in_array\\($n, ['\\\\''T_IF'\\\\'','\\\\''T_FOREACH'\\\\'','\\\\''T_FOR'\\\\'','\\\\''T_WHILE'\\\\'','\\\\''T_SWITCH'\\\\'']\\)\\) $stack[]=$n.'\\\\'':'\\\\''.$t[2]; if\\(in_array\\($n, ['\\\\''T_ENDIF'\\\\'','\\\\''T_ENDFOREACH'\\\\'','\\\\''T_ENDFOR'\\\\'','\\\\''T_ENDWHILE'\\\\'','\\\\''T_ENDSWITCH'\\\\'']\\)\\){ array_pop\\($stack\\); } } echo '\\\\''unclosed: '\\\\''; print_r\\($stack\\);')"
+      "Bash(php -r '$tokens = token_get_all\\(file_get_contents\\('\\\\''f:/Project/spht.jujun/storage/framework/views/35d416ff924e2578d513799789304839.php'\\\\''\\)\\); $stack=[]; foreach\\($tokens as $t\\){ if\\(!is_array\\($t\\)\\) continue; $n = token_name\\($t[0]\\); if\\(in_array\\($n, ['\\\\''T_IF'\\\\'','\\\\''T_FOREACH'\\\\'','\\\\''T_FOR'\\\\'','\\\\''T_WHILE'\\\\'','\\\\''T_SWITCH'\\\\'']\\)\\) $stack[]=$n.'\\\\'':'\\\\''.$t[2]; if\\(in_array\\($n, ['\\\\''T_ENDIF'\\\\'','\\\\''T_ENDFOREACH'\\\\'','\\\\''T_ENDFOR'\\\\'','\\\\''T_ENDWHILE'\\\\'','\\\\''T_ENDSWITCH'\\\\'']\\)\\){ array_pop\\($stack\\); } } echo '\\\\''unclosed: '\\\\''; print_r\\($stack\\);')",
+      "Bash(grep -nA3 \"midtrans\\\\|=>\" f:/Project/spht.jujun/config/services.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Services/RajaOngkirClient.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Services/ShippingService.php)",
+      "Bash(php -l f:/Project/spht.jujun/app/Console/Commands/RajaongkirSyncCities.php)",
+      "Bash(php -l f:/Project/spht.jujun/tests/Unit/RajaOngkirClientTest.php)",
+      "Bash(php -l f:/Project/spht.jujun/tests/Unit/ShippingServiceTest.php)",
+      "Bash(vendor/bin/phpunit tests/Unit/RajaOngkirClientTest.php tests/Unit/ShippingServiceTest.php)",
+      "Bash(curl -v --max-time 10 -I https://api.rajaongkir.com/)",
+      "Bash(curl --max-time 10 -sS -o /dev/null -w \"HTTP %{http_code} | resolved to %{remote_ip}\\\\n\" https://rajaongkir.komerce.id/)",
+      "Bash(curl --max-time 10 -sS -o /dev/null -w \"HTTP %{http_code}\\\\n\" -H \"key: dummy\" \"https://rajaongkir.komerce.id/api/v1/destination/domestic-destination?search=jakarta&limit=1\")",
+      "Bash(curl --max-time 12 -sS -H \"key: dummy\" -X POST \"https://rajaongkir.komerce.id/api/v1/calculate/domestic-cost\" -d \"origin=152&destination=155&weight=1000&courier=jne\")",
+      "Bash(php -r \"echo 'curl.cainfo='.ini_get\\('curl.cainfo'\\).PHP_EOL.'openssl.cafile='.ini_get\\('openssl.cafile'\\).PHP_EOL;\")",
+      "Bash(find \"E:/wamp64/bin/php/php8.2.18\" -iname \"cacert*\" 2>&1 | head -5; echo ---; find \"E:/wamp64\" -iname \"cacert.pem\" -path \"*extras*\" 2>&1 | head -3)",
+      "Read(//e/wamp64/bin/php/php8.2.18/**)",
+      "Read(//e/wamp64/**)",
+      "Bash(mkdir -p \"E:/wamp64/bin/php/php8.2.18/extras/ssl\")",
+      "Bash(curl -fsSL --max-time 30 -o \"E:/wamp64/bin/php/php8.2.18/extras/ssl/cacert.pem\" \"https://curl.se/ca/cacert.pem\")",
+      "Bash(php -r '$ch = curl_init\\('\\\\''https://rajaongkir.komerce.id/'\\\\''\\); curl_setopt\\($ch, CURLOPT_RETURNTRANSFER, true\\); $out = curl_exec\\($ch\\); $code = curl_getinfo\\($ch, CURLINFO_HTTP_CODE\\); $err = curl_error\\($ch\\); echo '\\\\''http='\\\\''.$code.'\\\\'' bytes='\\\\''.strlen\\($out\\).'\\\\'' err='\\\\''.$err.PHP_EOL;')",
+      "Bash(php -r ' *)"
     ]
   }
 }

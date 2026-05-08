@@ -11,7 +11,7 @@ class Regency extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'code', 'name', 'province_id'];
+    protected $fillable = ['id', 'code', 'name', 'province_id', 'rajaongkir_id'];
 
     public function province(): BelongsTo
     {

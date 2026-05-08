@@ -2,57 +2,49 @@
 
 namespace App\Services;
 
-use App\Models\ShippingRate;
 use InvalidArgumentException;
-use RuntimeException;
 
 /**
- * Simulasi ongkos kirim marketplace hasil tani lokal.
+ * Perhitungan ongkos kirim memakai API RajaOngkir (Komerce) — multi-kurir.
  *
- * Tidak memanggil API kurir eksternal (RajaOngkir/JNE/J&T/SiCepat).
- * Tarif murni ditentukan oleh kombinasi zona wilayah administratif
- * (province / kabupaten / kecamatan) antara alamat toko dan alamat pembeli,
- * dikalikan total berat barang per toko.
+ * - calculateOptions() → semua opsi (kurir × service) untuk satu rute,
+ *   dipakai untuk menampilkan picker di checkout.
+ * - calculateShipping($selectedCode) → satu opsi (yang dipilih atau default
+ *   termurah) dalam format yang kompatibel dengan order_shippings & view.
  *
- * Rumus: shipping_cost = base_fee + max(0, total_weight_kg - base_weight_kg) * extra_fee_per_kg
- *
- * Tarif tiap zona disimpan di tabel `shipping_rates` dan dapat diubah admin
- * lewat menu "Tarif Ongkir". Nilai default awal di-seed oleh
- * {@see \Database\Seeders\ShippingRateSeeder}.
+ * Tidak ada fallback ke perhitungan zona lokal — bila API gagal atau mapping
+ * `regencies.rajaongkir_id` belum tersedia, hasilnya `available: false` dan
+ * checkout akan diblokir di view.
  */
 class ShippingService
 {
-    public const ZONE_SAME_DISTRICT    = 'same_district';      // 1 kecamatan
-    public const ZONE_SAME_CITY        = 'same_city';          // 1 kabupaten/kota, beda kecamatan
-    public const ZONE_SAME_PROVINCE    = 'same_province';      // 1 provinsi, beda kabupaten/kota
-    public const ZONE_OUTSIDE_PROVINCE = 'outside_province';   // luar provinsi
+    /** Pseudo-zona untuk hasil dari RajaOngkir (disimpan ke order_shippings.zone). */
+    public const ZONE_RAJAONGKIR = 'rajaongkir';
 
-    /** Daftar semua zona yang dikenali, urut dari paling spesifik. */
-    public const ZONES = [
-        self::ZONE_SAME_DISTRICT,
-        self::ZONE_SAME_CITY,
-        self::ZONE_SAME_PROVINCE,
-        self::ZONE_OUTSIDE_PROVINCE,
-    ];
+    public function __construct(private RajaOngkirClient $rajaOngkir = new RajaOngkirClient())
+    {
+    }
 
     /**
-     * Cache tarif per-instance (per-request) supaya satu kali checkout yang
-     * memanggil calculateShipping berkali-kali untuk banyak toko hanya
-     * memuat tabel `shipping_rates` sekali.
-     *
-     * @var array<string, array{label:string, base_fee:int, base_weight_kg:int, extra_fee_per_kg:int}>|null
+     * Format kode opsi yang konsisten — "courier:service", lower:upper.
+     * Mis. "jne:REG", "pos:Paket Kilat Khusus" → "pos:PAKET KILAT KHUSUS".
      */
-    private ?array $rates = null;
+    public static function optionCode(string $courier, string $service): string
+    {
+        return strtolower($courier).':'.strtoupper($service);
+    }
 
     /**
-     * Hitung ongkos kirim dari satu toko ke alamat pembeli.
+     * Daftar semua opsi service untuk rute toko → pembeli, terurut termurah.
      *
-     * @param  array  $storeAddress  Wajib mengandung province_id, city_id & district_id.
-     * @param  array  $buyerAddress  Wajib mengandung province_id, city_id & district_id.
-     * @param  float  $totalWeightKg Total berat untuk toko ini (kg). Pecahan dibulatkan ke atas.
-     * @return array
+     * @return array{
+     *     available: bool,
+     *     reason: ?string,
+     *     options: array<int, array{code:string, courier:string, courier_name:string, service:string, description:?string, cost:int, etd:?string, label:string}>,
+     *     weight_kg: int,
+     * }
      */
-    public function calculateShipping(array $storeAddress, array $buyerAddress, float $totalWeightKg): array
+    public function calculateOptions(array $storeAddress, array $buyerAddress, float $totalWeightKg): array
     {
         $this->assertAddress('storeAddress', $storeAddress);
         $this->assertAddress('buyerAddress', $buyerAddress);
@@ -61,51 +53,135 @@ class ShippingService
             throw new InvalidArgumentException('totalWeightKg harus lebih dari 0.');
         }
 
-        // Berat dibulatkan ke atas — kurir umumnya menagih per-kg utuh.
         $weight = (int) ceil($totalWeightKg);
 
-        $zone = $this->determineZone($storeAddress, $buyerAddress);
-        $rate = $this->rate($zone);
+        if (! $this->rajaOngkir->isConfigured()) {
+            return $this->emptyOptions($weight, 'API RajaOngkir belum dikonfigurasi. Hubungi admin (set RAJAONGKIR_API_KEY).');
+        }
 
-        // Komponen tambahan hanya berlaku untuk berat di atas berat dasar.
-        $extraWeight  = max(0, $weight - $rate['base_weight_kg']);
-        $shippingCost = $rate['base_fee'] + ($extraWeight * $rate['extra_fee_per_kg']);
+        $originId      = $this->rajaOngkir->rajaongkirIdFor((string) $storeAddress['city_id']);
+        $destinationId = $this->rajaOngkir->rajaongkirIdFor((string) $buyerAddress['city_id']);
+
+        if (! $originId || ! $destinationId) {
+            $missing = [];
+            if (! $originId)      { $missing[] = 'kota toko'; }
+            if (! $destinationId) { $missing[] = 'kota pengiriman'; }
+            return $this->emptyOptions($weight, sprintf(
+                'Mapping RajaOngkir untuk %s belum tersedia. Hubungi admin untuk melengkapi data wilayah.',
+                implode(' & ', $missing),
+            ));
+        }
+
+        $raw = $this->rajaOngkir->costOptions($originId, $destinationId, $weight * 1000);
+        if (empty($raw)) {
+            return $this->emptyOptions(
+                $weight,
+                'Layanan RajaOngkir tidak merespons untuk rute ini. Coba lagi beberapa menit.',
+            );
+        }
+
+        $options = array_map(function (array $opt) {
+            return [
+                'code'         => self::optionCode($opt['code'], $opt['service']),
+                'courier'      => strtolower($opt['code']),
+                'courier_name' => (string) $opt['courier_name'],
+                'service'      => strtoupper($opt['service']),
+                'description'  => $opt['description'] ?? null,
+                'cost'         => (int) $opt['cost'],
+                'etd'          => $opt['etd'] ?? null,
+                'label'        => sprintf('%s — %s', $this->rajaOngkir->courierName($opt['code']), strtoupper($opt['service'])),
+            ];
+        }, $raw);
+
+        // Defensive sort: walaupun client.costOptions sudah sort, tetap urut
+        // di sini supaya kontrak "options[0] = termurah" tidak bergantung
+        // pada implementasi internal client.
+        usort($options, fn ($a, $b) => $a['cost'] <=> $b['cost']);
 
         return [
-            'available'        => true,
-            'zone'             => $zone,
-            'zone_label'       => $rate['label'],
-            'base_fee'         => (int) $rate['base_fee'],
-            'base_weight_kg'   => (int) $rate['base_weight_kg'],
-            'extra_fee_per_kg' => (int) $rate['extra_fee_per_kg'],
-            'total_weight_kg'  => $weight,
-            'shipping_cost'    => (int) $shippingCost,
-            'message'          => $this->buildMessage($zone, $weight, $rate, $shippingCost),
+            'available' => true,
+            'reason'    => null,
+            'options'   => $options,
+            'weight_kg' => $weight,
         ];
     }
 
     /**
-     * Tentukan zona berdasarkan kesamaan province/city/district antara toko dan pembeli.
-     *
-     * Pengecekan dilakukan bertingkat dari yang paling spesifik:
-     * sama district → sama city → sama province → di luar province.
+     * Hitung ongkir untuk satu opsi yang dipilih (atau default termurah).
+     * Format output kompatibel dengan struktur lama di view + order_shippings.
      */
-    private function determineZone(array $store, array $buyer): string
+    public function calculateShipping(array $storeAddress, array $buyerAddress, float $totalWeightKg, ?string $selectedCode = null): array
     {
-        $sameProvince = (string) $store['province_id'] === (string) $buyer['province_id'];
-        $sameCity     = (string) $store['city_id']     === (string) $buyer['city_id'];
-        $sameDistrict = (string) $store['district_id'] === (string) $buyer['district_id'];
+        $opts = $this->calculateOptions($storeAddress, $buyerAddress, $totalWeightKg);
+        $weight = $opts['weight_kg'];
 
-        if ($sameProvince && $sameCity && $sameDistrict) {
-            return self::ZONE_SAME_DISTRICT;
+        if (! $opts['available']) {
+            return $this->unavailable($weight, (string) $opts['reason']);
         }
-        if ($sameProvince && $sameCity) {
-            return self::ZONE_SAME_CITY;
+
+        $picked = null;
+        if ($selectedCode) {
+            foreach ($opts['options'] as $o) {
+                if ($o['code'] === $selectedCode) { $picked = $o; break; }
+            }
         }
-        if ($sameProvince) {
-            return self::ZONE_SAME_PROVINCE;
+        if (! $picked) {
+            // Default: opsi termurah (sudah di-sort di costOptions).
+            $picked = $opts['options'][0];
         }
-        return self::ZONE_OUTSIDE_PROVINCE;
+
+        $msg = sprintf(
+            'Pengiriman %s — Rp %s untuk %d kg%s.',
+            $picked['label'],
+            number_format((float) $picked['cost'], 0, ',', '.'),
+            $weight,
+            $picked['etd'] ? ' (estimasi '.$picked['etd'].')' : '',
+        );
+
+        return [
+            'available'        => true,
+            'zone'             => self::ZONE_RAJAONGKIR,
+            'zone_label'       => $picked['label'],
+            'courier'          => $picked['courier'],
+            'service_code'     => $picked['service'],
+            'option_code'      => $picked['code'],
+            'base_fee'         => (int) $picked['cost'],
+            'base_weight_kg'   => $weight,
+            'extra_fee_per_kg' => 0,
+            'total_weight_kg'  => $weight,
+            'shipping_cost'    => (int) $picked['cost'],
+            'message'          => $msg,
+            'options'          => $opts['options'],
+        ];
+    }
+
+    private function unavailable(int $weight, string $message): array
+    {
+        return [
+            'available'        => false,
+            'zone'             => null,
+            'zone_label'       => 'Ongkir Tidak Tersedia',
+            'courier'          => null,
+            'service_code'     => null,
+            'option_code'      => null,
+            'base_fee'         => 0,
+            'base_weight_kg'   => $weight,
+            'extra_fee_per_kg' => 0,
+            'total_weight_kg'  => $weight,
+            'shipping_cost'    => 0,
+            'message'          => $message,
+            'options'          => [],
+        ];
+    }
+
+    private function emptyOptions(int $weight, string $reason): array
+    {
+        return [
+            'available' => false,
+            'reason'    => $reason,
+            'options'   => [],
+            'weight_kg' => $weight,
+        ];
     }
 
     private function assertAddress(string $label, array $address): void
@@ -115,46 +191,5 @@ class ShippingService
                 throw new InvalidArgumentException("$label.$field wajib diisi untuk perhitungan ongkir.");
             }
         }
-    }
-
-    /**
-     * Ambil tarif untuk zona tertentu dari cache instance, memuat dari DB
-     * lazily pada panggilan pertama.
-     *
-     * @return array{label:string, base_fee:int, base_weight_kg:int, extra_fee_per_kg:int}
-     */
-    private function rate(string $zone): array
-    {
-        if ($this->rates === null) {
-            $this->rates = ShippingRate::query()
-                ->get(['zone', 'label', 'base_fee', 'base_weight_kg', 'extra_fee_per_kg'])
-                ->keyBy('zone')
-                ->map(fn (ShippingRate $r) => [
-                    'label'            => $r->label,
-                    'base_fee'         => (int) $r->base_fee,
-                    'base_weight_kg'   => (int) $r->base_weight_kg,
-                    'extra_fee_per_kg' => (int) $r->extra_fee_per_kg,
-                ])
-                ->all();
-        }
-
-        if (! isset($this->rates[$zone])) {
-            throw new RuntimeException("Tarif untuk zona '$zone' belum dikonfigurasi. Jalankan ShippingRateSeeder atau atur lewat menu admin.");
-        }
-
-        return $this->rates[$zone];
-    }
-
-    private function buildMessage(string $zone, int $weight, array $rate, float $cost): string
-    {
-        $rp     = fn (float $n) => 'Rp '.number_format($n, 0, ',', '.');
-        $detail = $rp($cost).' untuk '.$weight.' kg ('.$rate['label'].')';
-
-        return match ($zone) {
-            self::ZONE_SAME_DISTRICT    => 'Pengiriman dalam kecamatan: '.$detail,
-            self::ZONE_SAME_CITY        => 'Pengiriman dalam kabupaten/kota: '.$detail,
-            self::ZONE_SAME_PROVINCE    => 'Pengiriman dalam provinsi: '.$detail,
-            self::ZONE_OUTSIDE_PROVINCE => 'Pengiriman antar provinsi: '.$detail,
-        };
     }
 }

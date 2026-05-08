@@ -15,6 +15,17 @@
     /** @var array<int,\App\Enums\PaymentMethod> $paymentMethods */
     $paymentMethods  ??= PaymentMethod::cases();
     $isPickup          = $paymentMethod->isPickup();
+    $shippingSelections ??= [];
+
+    // Helper: build URL checkout dengan address/payment_method baru tapi
+    // tetap mempertahankan shipping[] selection yang sudah dipilih user.
+    $checkoutUrl = function (array $overrides = []) use ($selectedAddress, $paymentMethod, $shippingSelections) {
+        return route('pelanggan.checkout.index', array_merge([
+            'address_id'     => $selectedAddress->id,
+            'payment_method' => $paymentMethod->value,
+            'shipping'       => $shippingSelections,
+        ], $overrides));
+    };
 @endphp
 
 <x-layouts.storefront :title="$title" :active="$active">
@@ -57,7 +68,7 @@
                             @foreach ($paymentMethods as $pm)
                                 @php $isActive = $pm === $paymentMethod; @endphp
                                 <div class="col-md-4">
-                                    <a href="{{ route('pelanggan.checkout.index', ['address_id' => $selectedAddress->id, 'payment_method' => $pm->value]) }}"
+                                    <a href="{{ $checkoutUrl(['payment_method' => $pm->value]) }}"
                                        class="d-block p-3 rounded border h-100 text-decoration-none {{ $isActive ? 'border-success bg-success-lt' : 'text-body' }}"
                                        style="transition:all .15s">
                                         <div class="d-flex align-items-start gap-2 mb-1">
@@ -98,7 +109,7 @@
                                     @foreach ($addresses as $addr)
                                         @php $isSelected = $addr->id === $selectedAddress->id; @endphp
                                         <div class="col-md-6">
-                                            <a href="{{ route('pelanggan.checkout.index', ['address_id' => $addr->id, 'payment_method' => $paymentMethod->value]) }}"
+                                            <a href="{{ $checkoutUrl(['address_id' => $addr->id]) }}"
                                                class="d-block p-3 rounded border text-decoration-none {{ $isSelected ? 'border-success bg-success-lt' : 'text-body' }}"
                                                style="transition:all .15s">
                                                 <div class="d-flex align-items-center justify-content-between mb-1">
@@ -221,16 +232,66 @@
                                 </div>
                             </div>
 
+                            @php
+                                /** @var array<int, array<string, mixed>> $opts */
+                                $opts          = $shipping['options'] ?? [];
+                                $selectedCode  = $shipping['option_code'] ?? null;
+                                $isRajaongkir  = ($shipping['zone'] ?? null) === 'rajaongkir';
+                                $isPickupGroup = ($shipping['zone'] ?? null) === 'pickup';
+
+                                // Builder URL untuk tiap opsi → reload halaman dengan
+                                // shipping[storeId]=optCode (selections toko lain tetap).
+                                $optUrl = function (string $optCode) use ($selectedAddress, $paymentMethod, $group, $shippingSelections) {
+                                    $sel = $shippingSelections ?? [];
+                                    $sel[(string) $group['store_id']] = $optCode;
+                                    return route('pelanggan.checkout.index', [
+                                        'address_id'     => $selectedAddress->id,
+                                        'payment_method' => $paymentMethod->value,
+                                        'shipping'       => $sel,
+                                    ]);
+                                };
+                            @endphp
+
+                            @if ($isRajaongkir && count($opts) > 0)
+                                <div class="mt-3">
+                                    <label class="form-label small fw-semibold mb-2">
+                                        <i class="ti ti-truck-delivery me-1"></i>Pilih Kurir &amp; Service
+                                        <span class="text-secondary fw-normal">({{ count($opts) }} opsi)</span>
+                                    </label>
+                                    <div class="d-flex flex-column gap-2">
+                                        @foreach ($opts as $opt)
+                                            @php $isPick = $opt['code'] === $selectedCode; @endphp
+                                            <a href="{{ $optUrl($opt['code']) }}"
+                                               class="d-flex align-items-center gap-3 p-2 rounded border text-decoration-none {{ $isPick ? 'border-success bg-success-lt' : 'text-body' }}"
+                                               style="transition:background .15s,border-color .15s">
+                                                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                                                     style="width:32px;height:32px;background:{{ $isPick ? '#16a34a' : '#f1f5f9' }};color:{{ $isPick ? '#fff' : '#475569' }}">
+                                                    <i class="ti ti-{{ $isPick ? 'check' : 'circle' }}"></i>
+                                                </div>
+                                                <div class="flex-fill" style="min-width:0">
+                                                    <div class="fw-semibold small">{{ $opt['label'] }}</div>
+                                                    <div class="text-secondary small">
+                                                        @if (! empty($opt['description'])){{ $opt['description'] }}@endif
+                                                        @if (! empty($opt['etd']))<span class="ms-1">&middot; estimasi {{ $opt['etd'] }}</span>@endif
+                                                    </div>
+                                                </div>
+                                                <div class="text-end fw-bold {{ $isPick ? 'text-success' : '' }}">
+                                                    Rp {{ number_format($opt['cost'], 0, ',', '.') }}
+                                                </div>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+
+                                {{-- Persist selection ke form submit pembayaran. --}}
+                                @if ($selectedCode)
+                                    <input type="hidden" name="shipping[{{ $group['store_id'] }}]" value="{{ $selectedCode }}">
+                                @endif
+                            @endif
+
                             <div class="alert {{ $available ? 'alert-info' : 'alert-danger' }} mt-3 mb-0 py-2 small">
                                 <i class="ti {{ $available ? 'ti-info-circle' : 'ti-alert-triangle' }} me-1"></i>
                                 {{ $shipping['message'] }}
-                                @if ($available)
-                                    <div class="text-secondary mt-1">
-                                        Tarif dasar Rp {{ number_format($shipping['base_fee'], 0, ',', '.') }}
-                                        ({{ $shipping['base_weight_kg'] }} kg pertama)
-                                        + Rp {{ number_format($shipping['extra_fee_per_kg'], 0, ',', '.') }}/kg untuk kelebihan.
-                                    </div>
-                                @endif
                             </div>
                         </div>
                     </div>

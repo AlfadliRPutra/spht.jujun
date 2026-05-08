@@ -10,7 +10,7 @@ class Province extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'code', 'name'];
+    protected $fillable = ['id', 'code', 'name', 'rajaongkir_id'];
 
     public function regencies(): HasMany
     {

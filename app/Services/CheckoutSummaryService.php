@@ -18,11 +18,13 @@ class CheckoutSummaryService
     public function __construct(private ShippingService $shipping) {}
 
     /**
-     * @param  array|null         $buyerAddressOverride  Snapshot alamat dari Address yang dipilih
-     *                                                   di halaman checkout. Jika null, pakai default
-     *                                                   user (User::addressSnapshot()).
-     * @param  PaymentMethod|null $paymentMethod         Online pakai ongkir normal;
-     *                                                   Pickup memaksa ongkir 0 untuk semua toko.
+     * @param  array|null               $buyerAddressOverride  Snapshot alamat dari Address yang dipilih
+     *                                                         di halaman checkout. Jika null, pakai default
+     *                                                         user (User::addressSnapshot()).
+     * @param  PaymentMethod|null       $paymentMethod         Online pakai ongkir normal;
+     *                                                         Pickup memaksa ongkir 0 untuk semua toko.
+     * @param  array<int|string,string> $shippingSelections    Map storeId → kode opsi (mis. "jne:REG").
+     *                                                         Toko yang tidak ada di map pakai default termurah.
      * @return array{
      *     stores: array<int, array<string, mixed>>,
      *     subtotal_produk: int,
@@ -38,6 +40,7 @@ class CheckoutSummaryService
         User $buyer,
         ?array $buyerAddressOverride = null,
         ?PaymentMethod $paymentMethod = null,
+        array $shippingSelections = [],
     ): array
     {
         $paymentMethod ??= PaymentMethod::Online;
@@ -152,10 +155,14 @@ class CheckoutSummaryService
 
             // Hanya panggil ShippingService bila pembeli sudah punya alamat lengkap.
             if ($hasBuyerAddress && $group['total_weight_kg'] > 0) {
+                $selectedCode = isset($shippingSelections[$storeId])
+                    ? (string) $shippingSelections[$storeId]
+                    : null;
                 $shippingInfo = $this->shipping->calculateShipping(
                     $store->addressSnapshot(),
                     $buyerAddress,
                     $group['total_weight_kg'],
+                    $selectedCode,
                 );
             } else {
                 $shippingInfo = [

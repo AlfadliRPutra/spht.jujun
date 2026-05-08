@@ -36,15 +36,25 @@ class CheckoutController extends Controller
 
         $paymentMethod = PaymentMethod::fromInput($request->query('payment_method'));
 
-        $checkout = $summary->build($cart, $user, $selected->snapshot(), $paymentMethod);
+        // Selections kurir per toko: map storeId(string) → "jne:REG"
+        $rawSel    = (array) $request->query('shipping', []);
+        $selections = [];
+        foreach ($rawSel as $k => $v) {
+            if (is_string($v) && trim($v) !== '') {
+                $selections[(string) $k] = $v;
+            }
+        }
+
+        $checkout = $summary->build($cart, $user, $selected->snapshot(), $paymentMethod, $selections);
 
         return view('pages.pelanggan.checkout.index', [
-            'cart'              => $cart,
-            'checkout'          => $checkout,
-            'addresses'         => $addresses,
-            'selectedAddress'   => $selected,
-            'paymentMethod'     => $paymentMethod,
-            'paymentMethods'    => PaymentMethod::cases(),
+            'cart'                => $cart,
+            'checkout'            => $checkout,
+            'addresses'           => $addresses,
+            'selectedAddress'     => $selected,
+            'paymentMethod'       => $paymentMethod,
+            'paymentMethods'      => PaymentMethod::cases(),
+            'shippingSelections'  => $selections,
         ]);
     }
 }

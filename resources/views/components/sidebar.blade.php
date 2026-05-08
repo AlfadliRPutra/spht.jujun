@@ -45,9 +45,6 @@
             ['key' => 'admin.toko',       'label' => 'Toko & Produk',    'icon' => 'package',  'route' => 'admin.toko.index'],
             ['key' => 'admin.kategori',   'label' => 'Kategori',         'icon' => 'category', 'route' => 'admin.kategori.index'],
         ]],
-        ['label' => 'Operasional', 'items' => [
-            ['key' => 'admin.tarif-ongkir', 'label' => 'Tarif Ongkir', 'icon' => 'truck', 'route' => 'admin.tarif-ongkir.index'],
-        ]],
         ['label' => 'Konten', 'items' => [
             ['key' => 'admin.hero', 'label' => 'Hero Banner', 'icon' => 'image', 'route' => 'admin.hero.index'],
         ]],

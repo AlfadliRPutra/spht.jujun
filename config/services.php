@@ -44,4 +44,37 @@ return [
         'is_3ds'        => env('MIDTRANS_IS_3DS', true),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | RajaOngkir (Komerce)
+    |--------------------------------------------------------------------------
+    |
+    | Integrasi perhitungan ongkos kirim memakai API RajaOngkir Komerce
+    | (host lama `api.rajaongkir.com` sudah tidak responsif sejak akuisisi).
+    |
+    | Endpoint yang dipakai:
+    |   POST {base_url}/calculate/domestic-cost          → /cost
+    |   GET  {base_url}/destination/domestic-destination → search untuk sync
+    |
+    | Saat `key` kosong / mapping rajaongkir_id belum diisi / API call gagal,
+    | ShippingService akan mengembalikan ongkir "tidak tersedia" (memblokir
+    | checkout). Tidak ada tarif fallback lokal.
+    |
+    | base_url : root API (tanpa trailing slash).
+    | couriers : daftar kurir CSV yang ditawarkan ke pelanggan saat checkout.
+    |            Komerce mendukung jne, pos, tiki, sicepat, jnt, anteraja,
+    |            ninja, dll. Tiap kurir = 1 panggilan API per rute (kuota!).
+    |            Default tersedia di tier free yang aman: jne,pos,tiki.
+    | service_preference : 'cheapest' (default) untuk pre-select option termurah
+    |                      sebagai default; pelanggan tetap bisa ganti pakai picker.
+    */
+    'rajaongkir' => [
+        'key'                => env('RAJAONGKIR_API_KEY'),
+        'base_url'           => env('RAJAONGKIR_BASE_URL', 'https://rajaongkir.komerce.id/api/v1'),
+        'couriers'           => env('RAJAONGKIR_COURIERS', 'jne'),
+        'service_preference' => env('RAJAONGKIR_SERVICE', 'cheapest'),
+        'timeout'            => (int) env('RAJAONGKIR_TIMEOUT', 12),
+        'cache_ttl'          => (int) env('RAJAONGKIR_CACHE_TTL', 21600),
+    ],
+
 ];
