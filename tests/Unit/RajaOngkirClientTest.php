@@ -177,4 +177,34 @@ class RajaOngkirClientTest extends TestCase
         $client = new RajaOngkirClient();
         $this->assertSame([], $client->searchDestination('foobar'));
     }
+
+    public function test_429_daily_limit_sets_quota_exceeded_flag(): void
+    {
+        Http::fake([
+            self::BASE.'/calculate/domestic-cost' => Http::response([
+                'meta' => ['message' => 'Daily limit exceeded', 'code' => 429, 'status' => 'error'],
+                'data' => null,
+            ], 429),
+        ]);
+
+        $client = new RajaOngkirClient();
+        $opts   = $client->costOptions('501', '155', 3000);
+
+        $this->assertSame([], $opts);
+        $this->assertTrue($client->quotaExceeded());
+    }
+
+    public function test_quota_exceeded_flag_is_false_after_successful_call(): void
+    {
+        Http::fake([
+            self::BASE.'/calculate/domestic-cost' => Http::response([
+                'data' => [['code' => 'jne', 'name' => 'JNE', 'service' => 'REG', 'cost' => 12000, 'etd' => '1 day']],
+            ], 200),
+        ]);
+
+        $client = new RajaOngkirClient();
+        $client->costOptions('501', '155', 3000);
+
+        $this->assertFalse($client->quotaExceeded());
+    }
 }

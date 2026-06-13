@@ -84,8 +84,9 @@ class RajaongkirSyncCities extends Command
         $unmatched         = [];
         $consecutiveFails  = 0;
         $stoppedEarly      = false;
+        $quotaHit          = false;
 
-        $query->chunkById(50, function ($chunk) use ($client, $bar, &$matched, &$unmatched, &$consecutiveFails, &$stoppedEarly, $sleepMicro, $maxFails) {
+        $query->chunkById(50, function ($chunk) use ($client, $bar, &$matched, &$unmatched, &$consecutiveFails, &$stoppedEarly, &$quotaHit, $sleepMicro, $maxFails) {
             foreach ($chunk as $regency) {
                 if ($stoppedEarly) {
                     return false; // hentikan chunk loop
@@ -95,6 +96,16 @@ class RajaongkirSyncCities extends Command
 
                 $cleanName = $this->cleanCityName($regency->name);
                 $hits      = $client->searchDestination($cleanName, 10);
+
+                // Kuota harian Komerce habis → retry tidak menolong. Stop bersih
+                // sekarang; kota yang sudah ter-set aman, sisanya tinggal jalankan
+                // ulang command esok hari (atau setelah kuota di-reset).
+                if ($client->quotaExceeded()) {
+                    $quotaHit     = true;
+                    $stoppedEarly = true;
+                    $bar->advance();
+                    return false;
+                }
 
                 if ($sleepMicro > 0) {
                     usleep($sleepMicro);
@@ -132,7 +143,14 @@ class RajaongkirSyncCities extends Command
         $bar->finish();
         $this->line('');
 
-        if ($stoppedEarly) {
+        if ($quotaHit) {
+            $this->error(sprintf(
+                "Berhenti: kuota harian RajaOngkir/Komerce sudah habis (HTTP 429 Daily limit exceeded).\n"
+                . 'Berhasil dipetakan %d regency di run ini. Kuota biasanya reset keesokan harinya — '
+                . 'jalankan ulang command yang sama besok untuk melanjutkan sisanya (yang sudah ter-set otomatis dilewati).',
+                $matched,
+            ));
+        } elseif ($stoppedEarly) {
             $this->error(sprintf(
                 "Berhenti otomatis: %d kegagalan berturut-turut (kemungkinan rate-limit Komerce).\n"
                 . 'Berhasil dipetakan %d regency sebelum berhenti. Tunggu beberapa menit/jam, lalu jalankan ulang command — yang sudah ter-set tidak akan dilewati.',

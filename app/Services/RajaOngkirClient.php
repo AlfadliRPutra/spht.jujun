@@ -27,6 +27,20 @@ use Illuminate\Support\Facades\Log;
  */
 class RajaOngkirClient
 {
+    /**
+     * True bila panggilan /cost terakhir gagal karena batas kuota harian
+     * RajaOngkir (HTTP 429 "Daily limit exceeded"). Dipakai ShippingService
+     * untuk membedakan "kuota habis" (baru reset besok) dari error transient
+     * biasa, sehingga pesan ke pengguna jujur. Direset tiap kali costOptions()
+     * dipanggil (entry point yang dipakai ShippingService).
+     */
+    private bool $quotaExceeded = false;
+
+    public function quotaExceeded(): bool
+    {
+        return $this->quotaExceeded;
+    }
+
     public function isConfigured(): bool
     {
         return ! empty($this->key());
@@ -121,6 +135,9 @@ class RajaOngkirClient
                 ]);
 
             if (! $response->successful()) {
+                if ($response->status() === 429) {
+                    $this->quotaExceeded = true;
+                }
                 Log::warning('RajaOngkir /cost non-2xx', [
                     'status' => $response->status(),
                     'body'   => mb_substr((string) $response->body(), 0, 500),
@@ -180,6 +197,12 @@ class RajaOngkirClient
                 ]);
 
             if (! $response->successful()) {
+                // 429 = batas kuota harian Komerce tercapai. Tandai supaya
+                // ShippingService bisa menampilkan pesan "kuota habis" yang
+                // berbeda dari sekadar "tidak merespons".
+                if ($response->status() === 429) {
+                    $this->quotaExceeded = true;
+                }
                 Log::warning('RajaOngkir /cost non-2xx', [
                     'status'  => $response->status(),
                     'courier' => $courier,
@@ -226,6 +249,9 @@ class RajaOngkirClient
      */
     public function costOptions(string $originId, string $destinationId, int $weightGram, ?array $couriers = null): array
     {
+        // Reset penanda kuota di awal tiap perhitungan rute baru.
+        $this->quotaExceeded = false;
+
         $couriers = $couriers !== null && ! empty($couriers) ? $couriers : $this->couriers();
         $combined = [];
         foreach ($couriers as $c) {
@@ -248,6 +274,9 @@ class RajaOngkirClient
         if (! $this->isConfigured() || trim($query) === '') {
             return [];
         }
+
+        // Reset penanda kuota tiap pencarian baru.
+        $this->quotaExceeded = false;
 
         // Komerce free tier melempar 429 saat hit terlalu cepat. Coba ulang
         // dengan exponential backoff (2s → 4s → 8s) sebelum menyerah.
@@ -282,15 +311,28 @@ class RajaOngkirClient
                     ], $data);
                 }
 
-                // 429 → retry. Selain itu (404, 401, 5xx) langsung give up
-                // — retry tidak akan merubah hasil.
-                if ($lastStatus !== 429) {
-                    Log::warning('RajaOngkir /destination non-2xx', [
-                        'status' => $lastStatus,
-                        'query'  => $query,
-                    ]);
-                    return [];
+                // 429 = rate limit. Bedakan dua jenis:
+                //  - "Daily limit exceeded" → kuota harian habis, retry tidak
+                //    akan menolong. Tandai quotaExceeded & abort segera supaya
+                //    caller (sync command) bisa berhenti bersih.
+                //  - Throttle sesaat → retry dengan backoff.
+                if ($lastStatus === 429) {
+                    if (stripos((string) $response->body(), 'daily limit') !== false) {
+                        $this->quotaExceeded = true;
+                        Log::warning('RajaOngkir /destination daily limit exceeded', [
+                            'query' => $query,
+                        ]);
+                        return [];
+                    }
+                    continue; // throttle sesaat → backoff lalu coba lagi
                 }
+
+                // 404/401/5xx → retry tidak akan merubah hasil, langsung give up.
+                Log::warning('RajaOngkir /destination non-2xx', [
+                    'status' => $lastStatus,
+                    'query'  => $query,
+                ]);
+                return [];
             } catch (\Throwable $e) {
                 Log::warning('RajaOngkir /destination exception', [
                     'error'   => $e->getMessage(),

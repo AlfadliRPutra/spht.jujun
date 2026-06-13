@@ -74,6 +74,16 @@ class ShippingService
 
         $raw = $this->rajaOngkir->costOptions($originId, $destinationId, $weight * 1000);
         if (empty($raw)) {
+            // Bedakan kuota harian habis (429) dari kegagalan transient: yang
+            // pertama tidak akan pulih dalam hitungan menit, jadi pesannya beda.
+            if ($this->rajaOngkir->quotaExceeded()) {
+                return $this->emptyOptions(
+                    $weight,
+                    'Kuota perhitungan ongkir untuk hari ini sudah habis (batas harian RajaOngkir tercapai). '
+                    .'Ongkir online belum dapat dihitung sampai kuota di-reset, biasanya keesokan harinya. '
+                    .'Sementara itu Anda masih dapat memilih opsi "Ambil di Toko".',
+                );
+            }
             return $this->emptyOptions(
                 $weight,
                 'Layanan RajaOngkir tidak merespons untuk rute ini. Coba lagi beberapa menit.',

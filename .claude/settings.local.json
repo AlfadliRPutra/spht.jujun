@@ -97,7 +97,13 @@
       "Bash(php -r '$ch = curl_init\\('\\\\''https://rajaongkir.komerce.id/'\\\\''\\); curl_setopt\\($ch, CURLOPT_RETURNTRANSFER, true\\); $out = curl_exec\\($ch\\); $code = curl_getinfo\\($ch, CURLINFO_HTTP_CODE\\); $err = curl_error\\($ch\\); echo '\\\\''http='\\\\''.$code.'\\\\'' bytes='\\\\''.strlen\\($out\\).'\\\\'' err='\\\\''.$err.PHP_EOL;')",
       "Bash(php -r ' *)",
       "Bash(php -r \"echo 'php_ini='.php_ini_loaded_file\\(\\).PHP_EOL.'curl.cainfo='.ini_get\\('curl.cainfo'\\).PHP_EOL.'openssl.cafile='.ini_get\\('openssl.cafile'\\).PHP_EOL;\")",
-      "Bash(php -l f:/Project/spht.jujun/app/Support/WeightFormatter.php)"
+      "Bash(php -l f:/Project/spht.jujun/app/Support/WeightFormatter.php)",
+      "Bash(curl -s -w '\\\\n[HTTP_STATUS:%{http_code}]\\\\n' -X POST https://rajaongkir.komerce.id/api/v1/calculate/domestic-cost -H 'key: ZKngO96zfa4445f2ff903d9fjum2RxrR' -d 'origin=20034&destination=20007&weight=1000&courier=jne')",
+      "Bash(curl -s -w '\\\\n[HTTP:%{http_code}]\\\\n' -X POST https://rajaongkir.komerce.id/api/v1/calculate/domestic-cost -H 'key: ZKngO96zfa4445f2ff903d9fjum2RxrR' -d 'origin=20034&destination=20007&weight=1000&courier=jnt')",
+      "Bash(php -l app/Services/RajaOngkirClient.php)",
+      "Bash(php -l app/Console/Commands/RajaongkirSyncCities.php)",
+      "Bash(php -l app/Console/Commands/RajaongkirDumpMapping.php)",
+      "Bash(php -l database/seeders/RajaongkirMappingSeeder.php)"
     ]
   }
 }

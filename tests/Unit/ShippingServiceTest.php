@@ -142,6 +142,28 @@ class ShippingServiceTest extends TestCase
         $this->assertCount(3, $r['options']);
     }
 
+    public function test_returns_quota_message_when_daily_limit_exceeded(): void
+    {
+        $client = $this->createMock(RajaOngkirClient::class);
+        $client->method('isConfigured')->willReturn(true);
+        $client->method('rajaongkirIdFor')->willReturn('999');
+        $client->method('costOptions')->willReturn([]);
+        $client->method('quotaExceeded')->willReturn(true);
+
+        $svc = new ShippingService($client);
+        $r = $svc->calculateShipping(
+            $this->address('p1', 'c1', 'd1'),
+            $this->address('p2', 'c2', 'd2'),
+            3.0,
+        );
+
+        $this->assertFalse($r['available']);
+        $this->assertSame(0, $r['shipping_cost']);
+        // Pesan kuota harian harus beda dari pesan "tidak merespons" biasa.
+        $this->assertStringContainsString('Kuota', $r['message']);
+        $this->assertStringContainsString('Ambil di Toko', $r['message']);
+    }
+
     public function test_uses_selected_option_when_specified(): void
     {
         $client = $this->createMock(RajaOngkirClient::class);

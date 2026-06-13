@@ -25,6 +25,34 @@ class Wilayah
     private static array $cityNameById      = [];
     private static array $districtNameById  = [];
 
+    /** @var array<string, array<int, string>>|null */
+    private static ?array $coveredRegions = null;
+
+    /**
+     * Kota/kabupaten yang sudah ter-mapping ke RajaOngkir (punya rajaongkir_id),
+     * dikelompokkan per nama provinsi & terurut. Ongkir online hanya bisa
+     * dihitung untuk kota yang ada di daftar ini — dipakai untuk memberi tahu
+     * pelanggan daerah mana saja yang terlayani. Dimemoisasi per-request.
+     *
+     * @return array<string, array<int, string>>  provinceName => [cityName, ...]
+     */
+    public static function coveredRegions(): array
+    {
+        if (self::$coveredRegions !== null) {
+            return self::$coveredRegions;
+        }
+
+        return self::$coveredRegions = Regency::query()
+            ->whereNotNull('regencies.rajaongkir_id')
+            ->join('provinces', 'provinces.id', '=', 'regencies.province_id')
+            ->orderBy('provinces.name')
+            ->orderBy('regencies.name')
+            ->get(['regencies.name as city', 'provinces.name as province'])
+            ->groupBy('province')
+            ->map(fn ($rows) => $rows->pluck('city')->all())
+            ->toArray();
+    }
+
     /** @return array<int, array{id:string,name:string}> */
     public static function provinces(): array
     {

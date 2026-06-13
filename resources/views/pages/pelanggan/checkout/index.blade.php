@@ -292,6 +292,11 @@
                             <div class="alert {{ $available ? 'alert-info' : 'alert-danger' }} mt-3 mb-0 py-2 small">
                                 <i class="ti {{ $available ? 'ti-info-circle' : 'ti-alert-triangle' }} me-1"></i>
                                 {{ $shipping['message'] }}
+                                @unless ($available)
+                                    <div class="mt-1">
+                                        @include('partials.ongkir-coverage')
+                                    </div>
+                                @endunless
                             </div>
                         </div>
                     </div>
@@ -383,4 +388,29 @@
             </div>
         </form>
     @endif
+
+    @push('styles')
+        <style>
+            .ongkir-coverage-popover { max-width: 340px; }
+            .ongkir-coverage-popover .popover-body { max-height: 280px; overflow-y: auto; }
+            .ongkir-cov-prov { padding: .3rem 0; border-bottom: 1px solid #f1f5f9; }
+            .ongkir-cov-prov:last-child { border-bottom: 0; }
+            .ongkir-cov-prov-name { font-weight: 700; font-size: .76rem; color: #0f5132; text-transform: uppercase; letter-spacing: .02em; }
+            .ongkir-cov-cities { font-size: .78rem; color: #475569; line-height: 1.45; }
+        </style>
+    @endpush
+
+    @push('scripts')
+        <script>
+            // Aktifkan popover Bootstrap (dibundel Tabler, dimuat `defer` → siap
+            // saat DOMContentLoaded). Dipakai oleh tombol "Lihat daerah yang
+            // dilayani" pada toko yang ongkirnya tidak tersedia.
+            document.addEventListener('DOMContentLoaded', function () {
+                if (! window.bootstrap || ! bootstrap.Popover) return;
+                document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function (el) {
+                    new bootstrap.Popover(el);
+                });
+            });
+        </script>
+    @endpush
 </x-layouts.storefront>
