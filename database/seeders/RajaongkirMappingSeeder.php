@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  * JANGAN diedit manual — regenerate dengan:
  *   php artisan rajaongkir:dump-mapping
  *
- * Per 2026-06-13: 187 kota/kabupaten ter-mapping.
+ * Per 2026-06-13: 166 kota/kabupaten ter-mapping.
  */
 class RajaongkirMappingSeeder extends Seeder
 {
@@ -35,13 +35,9 @@ class RajaongkirMappingSeeder extends Seeder
         return [
             '1101' => '15884', // KABUPATEN SIMEULUE
             '1102' => '13257', // KABUPATEN ACEH SINGKIL
-            '1103' => '9510', // KABUPATEN ACEH SELATAN
-            '1104' => '9510', // KABUPATEN ACEH TENGGARA
             '1105' => '13595', // KABUPATEN ACEH TIMUR
-            '1106' => '9510', // KABUPATEN ACEH TENGAH
             '1107' => '11451', // KABUPATEN ACEH BARAT
             '1108' => '10230', // KABUPATEN ACEH BESAR
-            '1109' => '11657', // KABUPATEN PIDIE
             '1110' => '10770', // KABUPATEN BIREUEN
             '1111' => '14546', // KABUPATEN ACEH UTARA
             '1112' => '13016', // KABUPATEN ACEH BARAT DAYA
@@ -50,7 +46,6 @@ class RajaongkirMappingSeeder extends Seeder
             '1115' => '15350', // KABUPATEN NAGAN RAYA
             '1116' => '13099', // KABUPATEN ACEH JAYA
             '1117' => '15148', // KABUPATEN BENER MERIAH
-            '1118' => '11657', // KABUPATEN PIDIE JAYA
             '1171' => '9524', // KOTA BANDA ACEH
             '1172' => '12933', // KOTA SABANG
             '1173' => '9590', // KOTA LANGSA
@@ -61,25 +56,16 @@ class RajaongkirMappingSeeder extends Seeder
             '1203' => '28352', // KABUPATEN TAPANULI SELATAN
             '1204' => '28011', // KABUPATEN TAPANULI TENGAH
             '1205' => '28396', // KABUPATEN TAPANULI UTARA
-            '1206' => '26751', // KABUPATEN TOBA SAMOSIR
-            '1207' => '41100', // KABUPATEN LABUHAN BATU
             '1208' => '41253', // KABUPATEN ASAHAN
             '1209' => '42165', // KABUPATEN SIMALUNGUN
             '1210' => '41379', // KABUPATEN DAIRI
             '1211' => '42590', // KABUPATEN KARO
             '1212' => '41534', // KABUPATEN DELI SERDANG
             '1213' => '42887', // KABUPATEN LANGKAT
-            '1214' => '27458', // KABUPATEN NIAS SELATAN
             '1215' => '29028', // KABUPATEN HUMBANG HASUNDUTAN
             '1216' => '43364', // KABUPATEN PAKPAK BHARAT
-            '1217' => '26751', // KABUPATEN SAMOSIR
             '1218' => '43130', // KABUPATEN SERDANG BEDAGAI
             '1219' => '43222', // KABUPATEN BATU BARA
-            '1220' => '28879', // KABUPATEN PADANG LAWAS UTARA
-            '1221' => '28879', // KABUPATEN PADANG LAWAS
-            '1222' => '41100', // KABUPATEN LABUHAN BATU SELATAN
-            '1223' => '41100', // KABUPATEN LABUHAN BATU UTARA
-            '1224' => '27458', // KABUPATEN NIAS UTARA
             '1225' => '27356', // KABUPATEN NIAS BARAT
             '1271' => '28113', // KOTA SIBOLGA
             '1272' => '43822', // KOTA TANJUNG BALAI
@@ -135,7 +121,6 @@ class RajaongkirMappingSeeder extends Seeder
             '1602' => '53266', // KABUPATEN OGAN KOMERING ILIR
             '1603' => '53860', // KABUPATEN MUARA ENIM
             '1604' => '53478', // KABUPATEN LAHAT
-            '1605' => '52904', // KABUPATEN MUSI RAWAS
             '1606' => '54430', // KABUPATEN MUSI BANYUASIN
             '1607' => '49382', // KABUPATEN BANYU ASIN
             '1608' => '55573', // KABUPATEN OGAN KOMERING ULU SELATAN
@@ -143,7 +128,6 @@ class RajaongkirMappingSeeder extends Seeder
             '1610' => '54941', // KABUPATEN OGAN ILIR
             '1611' => '54847', // KABUPATEN EMPAT LAWANG
             '1612' => '54002', // KABUPATEN PENUKAL ABAB LEMATANG ILIR
-            '1613' => '52904', // KABUPATEN MUSI RAWAS UTARA
             '1671' => '52621', // KOTA PALEMBANG
             '1672' => '54212', // KOTA PRABUMULIH
             '1673' => '54174', // KOTA PAGAR ALAM
@@ -173,9 +157,7 @@ class RajaongkirMappingSeeder extends Seeder
             '1872' => '74554', // KOTA METRO
             '1901' => '49361', // KABUPATEN BANGKA
             '1902' => '73825', // KABUPATEN BELITUNG
-            '1903' => '49599', // KABUPATEN BANGKA BARAT
             '1904' => '49502', // KABUPATEN BANGKA TENGAH
-            '1905' => '49599', // KABUPATEN BANGKA SELATAN
             '1906' => '73874', // KABUPATEN BELITUNG TIMUR
             '1971' => '49334', // KOTA PANGKAL PINANG
             '2101' => '9424', // KABUPATEN KARIMUN
@@ -194,7 +176,6 @@ class RajaongkirMappingSeeder extends Seeder
             '3201' => '8118', // KABUPATEN BOGOR
             '3202' => '61202', // KABUPATEN SUKABUMI
             '3203' => '6157', // KABUPATEN CIANJUR
-            '3204' => '4816', // KABUPATEN BANDUNG
             '3205' => '5980', // KABUPATEN GARUT
             '3206' => '77120', // KABUPATEN TASIKMALAYA
             '3207' => '77566', // KABUPATEN CIAMIS
@@ -207,11 +188,9 @@ class RajaongkirMappingSeeder extends Seeder
             '3214' => '60248', // KABUPATEN PURWAKARTA
             '3215' => '37958', // KABUPATEN KARAWANG
             '3216' => '6532', // KABUPATEN BEKASI
-            '3217' => '4816', // KABUPATEN BANDUNG BARAT
             '3218' => '77833', // KABUPATEN PANGANDARAN
             '3271' => '8118', // KOTA BOGOR
             '3272' => '61202', // KOTA SUKABUMI
-            '3273' => '4816', // KOTA BANDUNG
             '3274' => '17117', // KOTA CIREBON
             '3275' => '6532', // KOTA BEKASI
             '3276' => '25986', // KOTA DEPOK

@@ -103,7 +103,9 @@
       "Bash(php -l app/Services/RajaOngkirClient.php)",
       "Bash(php -l app/Console/Commands/RajaongkirSyncCities.php)",
       "Bash(php -l app/Console/Commands/RajaongkirDumpMapping.php)",
-      "Bash(php -l database/seeders/RajaongkirMappingSeeder.php)"
+      "Bash(php -l database/seeders/RajaongkirMappingSeeder.php)",
+      "Bash(curl -s -G https://rajaongkir.komerce.id/api/v1/destination/domestic-destination -H 'key: ZKngO96zfa4445f2ff903d9fjum2RxrR' --data-urlencode search=CIREBON --data-urlencode limit=20)",
+      "Bash(php -l app/Support/CityMatcher.php)"
     ]
   }
 }

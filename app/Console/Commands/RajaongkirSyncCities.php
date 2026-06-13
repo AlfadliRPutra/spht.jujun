@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Regency;
 use App\Services\RajaOngkirClient;
+use App\Support\CityMatcher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -95,7 +96,9 @@ class RajaongkirSyncCities extends Command
                 $bar->setMessage(Str::limit($regency->name, 24));
 
                 $cleanName = $this->cleanCityName($regency->name);
-                $hits      = $client->searchDestination($cleanName, 10);
+                // Limit besar supaya kota yang dicari muncul di hasil walau
+                // Komerce mengembalikan banyak subdistrict serupa lebih dulu.
+                $hits      = $client->searchDestination($cleanName, 50);
 
                 // Kuota harian Komerce habis → retry tidak menolong. Stop bersih
                 // sekarang; kota yang sudah ter-set aman, sisanya tinggal jalankan
@@ -123,7 +126,7 @@ class RajaongkirSyncCities extends Command
                     continue;
                 }
 
-                $picked = $this->pickBestMatch($hits, $regency);
+                $picked = CityMatcher::match($hits, $regency->name, (string) ($regency->province?->name ?? ''));
                 if (! $picked) {
                     $unmatched[] = $regency->name.' ('.$regency->province?->name.')';
                     $consecutiveFails++;
@@ -208,47 +211,4 @@ class RajaongkirSyncCities extends Command
         return trim((string) ($collapsed ?? $stripped));
     }
 
-    /**
-     * Pilih hasil terbaik: province cocok > city_name persis cocok > yang pertama.
-     *
-     * @param  array<int, array<string, mixed>>  $hits
-     */
-    private function pickBestMatch(array $hits, Regency $regency): ?array
-    {
-        $regencyName  = $this->normalize($regency->name);
-        $provinceName = $this->normalize((string) ($regency->province?->name ?? ''));
-
-        // Tier 1: city_name & province_name keduanya cocok.
-        foreach ($hits as $h) {
-            if ($this->normalize($h['city_name'] ?? '') === $regencyName
-                && $this->normalize($h['province_name'] ?? '') === $provinceName) {
-                return $h;
-            }
-        }
-
-        // Tier 2: hanya province_name yang match.
-        foreach ($hits as $h) {
-            if ($this->normalize($h['province_name'] ?? '') === $provinceName) {
-                return $h;
-            }
-        }
-
-        // Tier 3: city_name match.
-        foreach ($hits as $h) {
-            if ($this->normalize($h['city_name'] ?? '') === $regencyName) {
-                return $h;
-            }
-        }
-
-        // Tier 4: pasrah, ambil yang pertama.
-        return $hits[0] ?? null;
-    }
-
-    private function normalize(string $s): string
-    {
-        $s = Str::lower(trim($s));
-        $s = preg_replace('/^(kabupaten|kab\.?|kota|administrasi)\s+/u', '', $s);
-        $s = preg_replace('/\s+/', ' ', (string) $s);
-        return (string) $s;
-    }
 }
