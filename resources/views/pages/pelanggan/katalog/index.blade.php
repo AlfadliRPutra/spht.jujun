@@ -80,6 +80,7 @@
             .product-name { font-weight: 600; color: var(--spht-ink); font-size: .95rem; margin-bottom: .2rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; line-height: 1.3; }
             .product-seller { font-size: .75rem; color: var(--spht-muted); margin-bottom: .35rem; }
             .product-price { color: var(--spht-green-dark); font-weight: 700; font-size: 1.05rem; }
+            .product-price-unit { font-size: .72rem; font-weight: 500; color: var(--spht-muted); margin-left: .2rem; }
             .product-meta { font-size: .72rem; color: var(--spht-muted); margin-top: .15rem; }
             .product-footer { padding: 0 1rem 1rem; display: flex; gap: .5rem; }
             .product-footer .btn { flex: 1; }
@@ -230,7 +231,10 @@
                             {{ $item->nama }}
                         </a>
                         <div class="product-seller"><i class="ti ti-user me-1"></i>{{ $item->petani?->name }}</div>
-                        <div class="product-price">Rp {{ number_format($item->harga, 0, ',', '.') }}</div>
+                        <div class="product-price">
+                            Rp {{ number_format($item->harga, 0, ',', '.') }}
+                            <span class="product-price-unit">/ {{ \App\Support\WeightFormatter::humanize($item->weight_kg) }}</span>
+                        </div>
                         <div class="product-meta">Stok {{ $item->stok }} &middot; Terjual {{ $item->sold_count }}</div>
                     </div>
                     <div class="product-footer">

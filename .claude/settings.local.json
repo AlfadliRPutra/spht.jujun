@@ -95,7 +95,9 @@
       "Bash(mkdir -p \"E:/wamp64/bin/php/php8.2.18/extras/ssl\")",
       "Bash(curl -fsSL --max-time 30 -o \"E:/wamp64/bin/php/php8.2.18/extras/ssl/cacert.pem\" \"https://curl.se/ca/cacert.pem\")",
       "Bash(php -r '$ch = curl_init\\('\\\\''https://rajaongkir.komerce.id/'\\\\''\\); curl_setopt\\($ch, CURLOPT_RETURNTRANSFER, true\\); $out = curl_exec\\($ch\\); $code = curl_getinfo\\($ch, CURLINFO_HTTP_CODE\\); $err = curl_error\\($ch\\); echo '\\\\''http='\\\\''.$code.'\\\\'' bytes='\\\\''.strlen\\($out\\).'\\\\'' err='\\\\''.$err.PHP_EOL;')",
-      "Bash(php -r ' *)"
+      "Bash(php -r ' *)",
+      "Bash(php -r \"echo 'php_ini='.php_ini_loaded_file\\(\\).PHP_EOL.'curl.cainfo='.ini_get\\('curl.cainfo'\\).PHP_EOL.'openssl.cafile='.ini_get\\('openssl.cafile'\\).PHP_EOL;\")",
+      "Bash(php -l f:/Project/spht.jujun/app/Support/WeightFormatter.php)"
     ]
   }
 }

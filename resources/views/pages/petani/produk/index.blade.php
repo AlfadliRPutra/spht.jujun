@@ -163,11 +163,26 @@
                                         <input type="number" name="stok" min="0" class="form-control"
                                                value="{{ old('stok', $p->stok) }}" required>
                                     </div>
-                                    <div class="col-12">
-                                        <label class="form-label required">Berat per Unit (kg)</label>
-                                        <input type="number" step="0.001" min="0.001" name="weight_kg" class="form-control"
-                                               value="{{ old('weight_kg', $p->weight_kg) }}" required>
-                                        <div class="form-text">Dipakai untuk perhitungan ongkos kirim.</div>
+                                    <div class="col-12 js-weight-picker">
+                                        <label class="form-label required">Berat per Unit</label>
+                                        <div class="input-group">
+                                            <input type="number" step="any" min="0" required
+                                                   class="form-control"
+                                                   data-weight-input
+                                                   value="">
+                                            <select class="form-select" data-weight-unit style="max-width:110px">
+                                                <option value="g">gram</option>
+                                                <option value="ons">ons</option>
+                                                <option value="kg" selected>kg</option>
+                                                <option value="kuintal">kuintal</option>
+                                            </select>
+                                        </div>
+                                        <input type="hidden" name="weight_kg" data-weight-kg
+                                               value="{{ old('weight_kg', $p->weight_kg) }}">
+                                        <div class="form-text">
+                                            Setara <strong data-weight-preview>—</strong> kg.
+                                            Dipakai untuk perhitungan ongkos kirim.
+                                        </div>
                                     </div>
                                 </div>
 
@@ -269,6 +284,7 @@
 
     @push('scripts')
         @include('partials.extra-image-accumulator')
+        @include('partials.weight-picker-script')
         <script>
             const SUB_MAP = @json(
                 $categories->mapWithKeys(fn ($c) => [

@@ -202,7 +202,7 @@
                                         <div class="small fw-semibold text-truncate">{{ $item->product->nama }}</div>
                                         <div class="text-secondary small">
                                             × {{ $item->jumlah }}
-                                            · {{ rtrim(rtrim(number_format($item->product->weight_kg, 3, ',', '.'), '0'), ',') }} kg/unit
+                                            · {{ \App\Support\WeightFormatter::humanize($item->product->weight_kg) }}/unit
                                         </div>
                                     </div>
                                     <div class="small">Rp {{ number_format($item->product->harga * $item->jumlah, 0, ',', '.') }}</div>

@@ -84,14 +84,14 @@
                     </div>
 
                     @php
-                        $weightStr = rtrim(rtrim(number_format((float) $produk->weight_kg, 3, ',', '.'), '0'), ',');
+                        $weightStr = \App\Support\WeightFormatter::humanize($produk->weight_kg);
                     @endphp
                     <div class="d-flex align-items-baseline gap-2 mb-2">
                         <div class="h1 price-tag mb-0">Rp {{ number_format($produk->harga, 0, ',', '.') }}</div>
                         <div class="text-secondary">/ unit</div>
                     </div>
                     <div class="text-secondary small mb-3">
-                        <i class="ti ti-weight me-1"></i>Berat {{ $weightStr }} kg / unit
+                        <i class="ti ti-weight me-1"></i>Berat {{ $weightStr }} / unit
                         <span class="text-muted">(dipakai untuk perhitungan ongkir)</span>
                     </div>
 

@@ -46,12 +46,25 @@
                     <label class="form-label required">Stok</label>
                     <input type="number" name="stok" value="{{ old('stok') }}" class="form-control" min="0" required>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 js-weight-picker">
                     <label class="form-label required">Berat per Unit</label>
                     <div class="input-group">
-                        <input type="number" name="weight_kg" step="0.001" min="0.001"
-                               value="{{ old('weight_kg', '1') }}" class="form-control" required>
-                        <span class="input-group-text">kg</span>
+                        <input type="number" step="any" min="0" required
+                               class="form-control"
+                               data-weight-input
+                               value="">
+                        <select class="form-select" data-weight-unit style="max-width:110px">
+                            <option value="g">gram</option>
+                            <option value="ons">ons</option>
+                            <option value="kg" selected>kg</option>
+                            <option value="kuintal">kuintal</option>
+                        </select>
+                    </div>
+                    <input type="hidden" name="weight_kg" data-weight-kg
+                           value="{{ old('weight_kg', '1') }}">
+                    <div class="form-text">
+                        Setara <strong data-weight-preview>—</strong> kg.
+                        Dipakai untuk perhitungan ongkos kirim.
                     </div>
                 </div>
 
@@ -110,6 +123,7 @@
 
     @push('scripts')
         @include('partials.extra-image-accumulator')
+        @include('partials.weight-picker-script')
         <script>
             // Cascading kategori → sub kategori
             const SUB_MAP = @json(
