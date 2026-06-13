@@ -76,8 +76,10 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     });
 
     Route::middleware('role:pelanggan')->prefix('pelanggan')->name('pelanggan.')->group(function () {
-        Route::post('/keranjang',  [CartController::class, 'store'])->name('keranjang.store');
-        Route::view('/keranjang',  'pages.pelanggan.keranjang.index')->name('keranjang.index');
+        Route::post('/keranjang',           [CartController::class, 'store'])->name('keranjang.store');
+        Route::view('/keranjang',           'pages.pelanggan.keranjang.index')->name('keranjang.index');
+        Route::patch('/keranjang/{item}',   [CartController::class, 'update'])->name('keranjang.update');
+        Route::delete('/keranjang/{item}',  [CartController::class, 'destroy'])->name('keranjang.destroy');
         Route::get('/checkout',    [PelangganCheckoutController::class, 'index'])->name('checkout.index');
 
         Route::prefix('alamat')->name('alamat.')->group(function () {

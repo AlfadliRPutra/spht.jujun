@@ -85,14 +85,6 @@
                 box-shadow:0 12px 26px -10px rgba(16,185,129,.55);
                 position:relative;
             }
-            .pf-avatar .pf-edit{
-                position:absolute;right:-2px;bottom:-2px;
-                width:30px;height:30px;border-radius:50%;
-                background:#fff;color:var(--brand-700);
-                display:inline-flex;align-items:center;justify-content:center;
-                box-shadow: 0 4px 10px rgba(15,23,42,.15);
-                border:1px solid var(--border);font-size:.95rem;
-            }
             .pf-rolechip{
                 display:inline-flex;align-items:center;gap:.35rem;
                 padding:.35rem .7rem;border-radius:999px;
@@ -273,7 +265,6 @@
         <div class="d-flex flex-wrap align-items-center gap-3">
             <div class="pf-avatar">
                 {{ $initials ?: 'U' }}
-                <span class="pf-edit" title="Foto profil belum tersedia"><i class="ti ti-camera"></i></span>
             </div>
             <div class="flex-fill" style="min-width:240px">
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-1">

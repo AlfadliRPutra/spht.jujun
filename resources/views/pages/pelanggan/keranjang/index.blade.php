@@ -36,10 +36,26 @@
                             </td>
                             <td class="text-end">Rp {{ number_format($item->product->harga, 0, ',', '.') }}</td>
                             <td class="text-center" style="width:120px">
-                                <input type="number" class="form-control form-control-sm" value="{{ $item->jumlah }}" min="1">
+                                <form method="POST" action="{{ route('pelanggan.keranjang.update', $item->id) }}" class="d-inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="number" name="jumlah"
+                                           class="form-control form-control-sm text-center mx-auto"
+                                           style="width:80px"
+                                           value="{{ $item->jumlah }}" min="1" max="{{ $item->product->stok }}"
+                                           onchange="this.form.submit()" aria-label="Jumlah">
+                                </form>
                             </td>
                             <td class="text-end">Rp {{ number_format($item->product->harga * $item->jumlah, 0, ',', '.') }}</td>
-                            <td><button class="btn btn-sm btn-outline-danger">Hapus</button></td>
+                            <td>
+                                <form method="POST" action="{{ route('pelanggan.keranjang.destroy', $item->id) }}"
+                                      data-confirm="Hapus {{ $item->product->nama }} dari keranjang?"
+                                      data-confirm-icon="warning" data-confirm-button="Ya, hapus" data-confirm-color="#dc2626">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+                                </form>
+                            </td>
                         </tr>
                     @empty
                         <tr><td colspan="5" class="text-center text-secondary py-4">Keranjang kosong.</td></tr>
