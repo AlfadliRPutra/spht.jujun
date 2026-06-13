@@ -111,9 +111,6 @@
                 {{-- Quick CTA per role --}}
                 @switch($role)
                     @case(UserRole::Petani)
-                        <a href="{{ route('petani.produk.create') }}" class="btn head-cta d-none d-sm-inline-flex">
-                            <i class="ti ti-plus me-1"></i> Tambah Produk
-                        </a>
                         @break
 
                     @case(UserRole::Pelanggan)
@@ -216,9 +213,6 @@
                             </a>
                         @endif
 
-                        <a href="#" class="dropdown-item">
-                            <i class="ti ti-headset me-2"></i>Bantuan
-                        </a>
                         <div class="dropdown-divider"></div>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf

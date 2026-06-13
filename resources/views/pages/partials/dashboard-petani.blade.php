@@ -282,9 +282,6 @@
         <span class="pt-meta">
             <i class="ti ti-calendar"></i>{{ now()->translatedFormat('l, d F') }}
         </span>
-        <a href="{{ route('petani.produk.create') }}" class="btn btn-cta">
-            <i class="ti ti-plus me-1"></i>Tambah Produk
-        </a>
     </div>
 </div>
 

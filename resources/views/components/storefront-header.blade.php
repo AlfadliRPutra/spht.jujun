@@ -158,9 +158,6 @@
                             <a href="{{ route('profile.edit') }}" class="dropdown-item">
                                 <i class="ti ti-user-cog me-2"></i>Pengaturan Profil
                             </a>
-                            <a href="#" class="dropdown-item">
-                                <i class="ti ti-headset me-2"></i>Bantuan
-                            </a>
                             <div class="dropdown-divider"></div>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
